@@ -29,7 +29,7 @@ class Sigen:
         return self.opc()
 
     def ramp_config(self, symmetry, frequency, amplitude, offset):
-        """[summary]
+        """Defines ramp output function with necessary parameters
 
         Args:
             symmetry (float): from 0 to 100
@@ -38,7 +38,7 @@ class Sigen:
             offset (float): voltage offset
 
         Returns:
-            str: expected output "1\n" of "*OPC?" command
+            str: expected output is "1\n" of "*OPC?" command
         """
         self.write('FUNCtion RAMP')
 
@@ -53,8 +53,7 @@ class Sigen:
         return self.opc()
 
     def sine_config(self, frequency, volt_high, volt_low, phase):
-        """[summary]
-
+        """defines sinusoidal wave as output function
         Args:
             frequency (float): WAVEFORM FREQUENCY
             volt_high (float): maximum voltage
@@ -62,7 +61,7 @@ class Sigen:
             phase (float): phase in degrees
 
         Returns:
-            [type]: [description]
+            str: expected output is "1\n" of "*OPC?" command
         """
         self.write("FUNCtion SIN")
         self.write('FREQ {:.3f}'.format(frequency))
