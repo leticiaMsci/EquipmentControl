@@ -2,8 +2,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-from Functions import  att_lib, tunics_lib, aq63XX
-import Functions.VOA.VOA_lib as VOA_lib
+import  att_lib, tunics_lib, aq63XX, sigen_lib
+import VOA.VOA_lib as VOA_lib
 import ivi
 import visa
 import time
@@ -15,8 +15,8 @@ att_in_visa = 'ASRL5::INSTR'
 att_r_visa = 'ASRL13::INSTR'
 sigen_visa = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
 
-
-att_out = VOA_lib.VOA(daq_port,'Functions\VOA\calib_U00306.json')
+#%%
+att_out = VOA_lib.VOA(daq_port,'VOA\calib_U00306.json')
 att_in = att_lib.Att(resource_str = att_in_visa)
 att_r = att_lib.Att(resource_str = att_r_visa)
 
@@ -59,21 +59,8 @@ def scope_avg(scope, channel):
     return vmean
 
 #%%
-rm = visa.ResourceManager()
-sigen = rm.open_resource(sigen_visa)
-
-def sigen_on(sigen):
-    sigen.write('OUTPut ON')
-    return sigen.query('*OPC?')
-
-def sigen_off(sigen):
-    sigen.write('OUTPut OFF')
-    return sigen.query('*OPC?')
-
-
-# %%
-#sigen_on(sigen)
-sigen_off(sigen)
+sigen = sigen_lib.Sigen(sigen_visa = sigen_visa)
+sigen.output_off()
 # %%
 total_att = 29
 att_in_0 = 10
@@ -98,10 +85,6 @@ osa_table=np.zeros((len(x_osa), nsteps))
 
 toolbar_width = len(lbd_list)
 
-# setup toolbar
-#sys.stdout.write("[%s]" % (" " * toolbar_width))
-#sys.stdout.flush()
-#sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
 
 for i, lbd in enumerate(lbd_list):
     tunics.wavelength(lbd)
@@ -123,10 +106,7 @@ for i, lbd in enumerate(lbd_list):
     #plt.title(str(lbd)+"nm")
     #plt.show()
 
-    
-    #sys.stdout.write("-")
-    #sys.stdout.flush()
-#sys.stdout.write("]\n")
+
 # %%
 np.savetxt("./2021-08-27_osa_table.csv", osa_table, delimiter=",")
 np.savetxt("./2021-08-27_lbd_table.csv", λ_table, delimiter=",")
