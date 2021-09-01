@@ -32,7 +32,9 @@ tunics.power_on(power=5)
 #%%
 osa = aq63XX.AQ63XX()
 osa.ConnectOSA(isgpib = True, address = 13)
+print("1")
 osa.InitOSA()
+print("2")
 osa.osa.write('AUTO OFFSET OFF')
 osa.SetSpanWavelength(.5)
 osa.SetCenterWavelength(1550)
@@ -60,6 +62,10 @@ def scope_avg(scope, channel):
 
 #%%
 sigen = sigen_lib.Sigen(sigen_visa = sigen_visa)
+sigen.output_on()
+
+
+#%%
 sigen.output_off()
 # %%
 total_att = 29
@@ -102,9 +108,9 @@ for i, lbd in enumerate(lbd_list):
     reflec_vec[i]=scope_avg(scope, ch_reflection)
     mzi_vec[i]=scope_avg(scope, ch_mzi)
 
-    #plt.plot(1e9*x,y)
-    #plt.title(str(lbd)+"nm")
-    #plt.show()
+    plt.plot(1e9*x,y)
+    plt.title(str(lbd)+"nm")
+    plt.show()
 
 
 # %%
