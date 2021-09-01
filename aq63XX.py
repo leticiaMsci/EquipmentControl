@@ -88,11 +88,17 @@ class AQ63XX:
             else:
                 self.osa.write("format:data ascii")
 
-            if(fullInit):    
-                self.osa.write("disp:trace:y1:spac 0")
-                self.osa.write("calc:mark:auto on")
-                self.osa.write("calc:mark:max:srl:auto")
+            #if(fullInit):    
+            #    self.osa.write("disp:trace:y1:spac 0")
+            #    self.osa.write("calc:mark:auto on")
+            #    self.osa.write("calc:mark:max:srl:auto")
                 #self.osa.write("sens:aver:coun 1")
+
+            self.osa.write(':INITiate:SMODe SINGle')
+            self.osa.write(':CALibration:ZERO off')
+            self.osa.write(':CALibration:ZERO once')
+            time.sleep(10)
+            #osa.write('*WAI')
             
             self.ChangeTrace(self.tracen, wr=write)
             self.traceLength = self.GetTraceLength()
