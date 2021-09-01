@@ -57,6 +57,16 @@ class VOA:
     """
 
     def __init__(self, daq_port, calib_filename):
+        """initializes VOA attenuator
+
+        Args:
+            daq_port (str): string refering to daq output channel
+            calib_filename (str): file path to calibration file
+
+        Raises:
+            FileNotFoundError: [description]
+            Exception: [description]
+        """
         try:
             with open(calib_filename, "r") as jsonfile:
                 calib_info = json.load(jsonfile)
@@ -98,19 +108,23 @@ class VOA:
 
 
 
-# quick DAQ functions
-def _daq_write_voltage(voltage, dev_id = _dev_write):
-    with nidaqmx.Task() as analog_output:
-        analog_output.ao_channels.add_ao_voltage_chan(dev_id)
-        analog_output.write(voltage)
 
-def _daq_read_voltage(dev_id = _dev_read):
-    with nidaqmx.Task() as task:
-        task.ai_channels.add_ai_voltage_chan(dev_id)
-        return np.mean(task.read(number_of_samples_per_channel=3))
 
 
 if __name__ == '__main__': #calibration routine
+    # quick DAQ functions
+    def _daq_write_voltage(voltage, dev_id = _dev_write):
+        with nidaqmx.Task() as analog_output:
+            analog_output.ao_channels.add_ao_voltage_chan(dev_id)
+            analog_output.write(voltage)
+
+    def _daq_read_voltage(dev_id = _dev_read):
+        with nidaqmx.Task() as task:
+            task.ai_channels.add_ai_voltage_chan(dev_id)
+            return np.mean(task.read(number_of_samples_per_channel=3))
+
+
+
     write_list = np.linspace(0, _max_voltage, 100)
     read_list = np.zeros(len(write_list))
     
