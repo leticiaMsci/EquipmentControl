@@ -101,7 +101,7 @@ class VOA:
             analog_output.ao_channels.add_ao_voltage_chan(dev_id)
             analog_output.write(voltage)
 
-    def att_dB(self, att_value):
+    def set_att(self, att_value):
         transmission = 10**(-att_value/10)
         voltage = self.inverse_function(transmission, *self.calib_param)
         
