@@ -10,9 +10,13 @@ class Sigen:
         self.rm = visa.ResourceManager()
         try:
             self.sigen = self.rm.open_resource(_sigen_visa)
-            print(self.sigen.query("*IDN?"))
+            print("Sigen IDN: "+self.sigen.query("*IDN?"))
         except:
             raise Exception("Could not open signal generator "+_sigen_visa)
+
+    def __del__(self):
+        self.output_off()
+        self.sigen.close()
     
     def opc(self):
         return self.sigen.query('*OPC?')
