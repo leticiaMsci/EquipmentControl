@@ -18,26 +18,28 @@ class T100R:
     sweep_max_cycles = 5 #Maximum number of cycles for wavelength sweep
     
     def __init__(self, ip = ip, wavelength_mode = wavelength_mode):
-        print('Initializing ' + ip)
+        print('Initializing ' + ip, end="")
         self.ip_addr = ip
 
         try:
             self.tunics =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print(".",  end="")
         except OSError as msg:
             self.tunics = None
             raise Exception('Could not open socket.')
 
         self.tunics.connect((ip, 50000))
-
+        print(".",  end="")
         try:
             self.tunics.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            print(".",  end="")
         except:
             print('Error setting socket options')
         
         #Setting wavelength mode
         self.wavelength_mode = wavelength_mode
         self.query('SOURce:WAVelength:MODE '+ wavelength_mode)
-        
+        print("Tunics was successfully initialized.")
 
     def read(self, input_buffer = 2**33):
         '''
