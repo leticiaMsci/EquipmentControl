@@ -97,7 +97,7 @@ class AQ63XX:
             self.osa.write(':INITiate:SMODe SINGle')
             self.osa.write(':CALibration:ZERO off')
             self.osa.write(':CALibration:ZERO once')
-            time.sleep(10)
+            time.sleep(30)
             #osa.write('*WAI')
             
             self.ChangeTrace(self.tracen, wr=write)
@@ -120,6 +120,12 @@ class AQ63XX:
             self.CloseOSA()
             self.ConnectOSA()
             self.InitOSA(self.gpib, self.gpibAddr, self.alias)
+
+    def HorizonScale(self, is_wavelength):
+        if is_wavelength:
+            self.osa.write(":UNIT:X WAVelength")
+        else:
+            self.osa.write(":UNIT:X FREQuency")
         
     def ContinuousSweep(self):
         if self.osaOK:
@@ -182,10 +188,18 @@ class AQ63XX:
         else:
             return 0
     
-    def SetSpanWavelength(self, wl):
+    def SetSpanWavelength(self, wl, wl_unit = None):
         if self.osaOK:
-            wl = wl*1e-9
-            self.osa.write("sens:wav:span " + str(wl))
+            if wl_unit == None:
+                wl = wl*1e-9
+                self.HorizonScale(is_wavelength = True)
+                self.osa.write("sens:wav:span " + str(wl))
+            elif wl_unit=='NM' or wl_unit=='nm':
+                self.HorizonScale(is_wavelength=True)
+            else:
+                self.HorizonScale(is_wavelength=False)
+            
+            self.osa.write("sens:wav:span {:.3f} ".format(wl)+ wl_unit)
     
     def GetResBW(self):
         if self.osaOK:
@@ -389,11 +403,21 @@ class AQ63XX:
             
     def SweepRange(self, lbd_ini, lbd_end, resolution,
                     lbd_unit = 'NM', resolution_unit = 'PM'):
-           
-        self.osa.write(':SENSe:WAVelength:STARt '+'{:.3f} '.format(lbd_ini)+lbd_unit)
-        self.osa.write(':SENSe:WAVelength:STOP '+'{:.3f} '.format(lbd_end)+lbd_unit)
-        self.osa.write(':SENSe:BANDwidth:RESolution '+'{:.3f}'.format(resolution)+resolution_unit)
+        if lbd_unit == 'NM':
+            print('X-axis set as Wavelength')
+            self.HorizonScale(True) 
+        elif lbd_unit == 'THZ':
+            print('X-axis set as Frequency')
+            self.HorizonScale(False)
+        else:
+            print("Invalid unit. Possibilities: 'NM' or 'THz'")
+
+        self.osa.write(':SENSe:WAVelength:STARt {:.3f}'.format(lbd_ini)+lbd_unit)
+        print(':SENSe:WAVelength:STARt {:.3f}'.format(lbd_ini)+lbd_unit)
+        self.osa.write(':SENSe:WAVelength:STOP {:.3f}'.format(lbd_end)+lbd_unit)
+        self.osa.write(':SENSe:BANDwidth:RESolution {:.3f}'.format(resolution)+resolution_unit)
         self.osa.write(':TRACe:ACTive TRA')
+
 
 
     def binblock_raw(self, data_in):
