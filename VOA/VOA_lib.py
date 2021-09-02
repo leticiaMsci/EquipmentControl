@@ -1,6 +1,13 @@
 """
     This module offers tools to control MEMS-based Electronic Variable Optical Attenuators (VOAs).
-    The electronic VOA are controlled 
+    The electronic VOA are controlled
+
+    How to use it:
+        One you have the calibration file (calib_[Serial Number].json), 
+        connect the VOA to a DAQ output port, and declare a class such as:
+
+        att = VOA("Dev1/ao1", "./calib_U00312.json")
+        att.att_dB(10)   #will set attenuation to 10dB
 
     Raises:
         FileNotFoundError: [description]
@@ -70,7 +77,7 @@ class VOA:
         try:
             with open(calib_filename, "r") as jsonfile:
                 calib_info = json.load(jsonfile)
-                print("Calibration file read successfully")
+                print("Calibration file read successfully ("+calib_filename+")")
         except FileNotFoundError as error:
             print(error)
             raise FileNotFoundError('Please select a valid calibration file or perform calibration.') from None
@@ -89,7 +96,6 @@ class VOA:
         self.inverse_function = eval(calib_info["inverse_function"])
 
     def daq_write_voltage(self, voltage):
-
         dev_id = self.daq_port
         with nidaqmx.Task() as analog_output:
             analog_output.ao_channels.add_ao_voltage_chan(dev_id)
@@ -102,6 +108,7 @@ class VOA:
         if voltage>self.max_voltage:
             print("VOA "+self.serial_number+": Desired attenuation is too high. Voltage ({:.3f}) was set to maximum.".format(voltage))
             voltage = self.max_voltage
+
         self.daq_write_voltage(voltage)
 
 
