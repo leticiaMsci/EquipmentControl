@@ -1,0 +1,78 @@
+#%%
+import  att_lib, tunics_lib, aq63XX, sigen_lib
+import VOA.VOA_lib as VOA_lib
+import ivi
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+if __name__=='__main__':
+    daq_port = 'Dev1/ao1'
+    att_in_id = 'ASRL5::INSTR'
+    att_r_id = 'ASRL13::INSTR'
+    tunics_ip = 'yetula.ifi.unicamp.br'
+    sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
+    scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
+    #scope channels
+    ch_reflection = 0
+    ch_transmission = 1
+    ch_mzi = 2
+    ch_hcn=3
+    att_out = VOA_lib.VOA(daq_port,'VOA\calib_U00306.json')
+    att_in = att_lib.Att(resource_str = att_in_id)
+    att_r = att_lib.Att(resource_str = att_r_id)
+    tunics = tunics_lib.T100R(ip=tunics_ip)
+    scope = ivi.agilent.agilentDSOX92504A(scope_id, prefer_pyvisa = True)
+    sigen = sigen_lib.Sigen(sigen_visa = sigen_id)
+
+
+def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
+    val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
+    sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550,
+    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
+
+    att_in.set_att(val_att_in)
+    att_out.set_att(val_att_out)
+    att_r.set_att(val_att_r)
+
+    sigen.ramp_config(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
+
+    tunics.power_on(power=5, lbd=lbd_piezo)
+
+    #sigen ramp
+    sigen.output_on()
+
+    #oscilloscope trigger on aux port
+    scope._write(":RUN")
+    scope._write(':TRIGger:EDGE:SOURce AUX')
+    scope._write(":TRIGger:LEVel AUX, 1")
+    scope._write(":TIMebase:ROLL:ENABLE OFF")
+    scope.acquisition.time_per_record =2.5/sigen_freq
+
+    # 
+    print("Is polarization set? y/n ")
+    pol = input()
+    print(pol)
+
+    if pol!='y' and pol!='Y':
+        sigen.output_off()
+        raise Exception("Polarization not successful")
+
+    print("Polarization set successfully.")
+    transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
+    mzi = np.array(scope.channels[ch_mzi].measurement.fetch_waveform())
+    hcn = np.array(scope.channels[ch_hcn].measurement.fetch_waveform())
+    plt.plot(transmission[0, ::100], transmission[1, ::100])
+    plt.plot(mzi[0, ::100], mzi[1, ::100])
+    plt.plot(hcn[0, ::100], hcn[1, ::100])
+    plt.show()
+    df_pol = pd.DataFrame()
+    df_pol['time'] = transmission[0]
+    df_pol['transmission'] = transmission[1]
+    df_pol['mzi'] = mzi[1]
+    df_pol['hcn'] = hcn[1]
+
+    sigen.output_off()
+    
+    return df_pol
+
