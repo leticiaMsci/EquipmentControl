@@ -97,7 +97,7 @@ class AQ63XX:
             self.osa.write(':INITiate:SMODe SINGle')
             self.osa.write(':CALibration:ZERO off')
             self.osa.write(':CALibration:ZERO once')
-            time.sleep(30)
+            time.sleep(1)
             #osa.write('*WAI')
             
             self.ChangeTrace(self.tracen, wr=write)
