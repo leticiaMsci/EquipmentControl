@@ -14,7 +14,8 @@ def cband_scan(sigen, tunics, scope):
 
     scope._write(":TIMebase:ROLL:ENABLE ON")
     scope.acquisition.time_per_record = 2.5*time_frame
-
+    
+    tunics.power_on(power=5)
     tunics.sweep_config(lbd_ini, lbd_end, lbd_speed, sweep_max_cycles=5)
     tunics.sweep_start()
     print("waiting for acquisition...")
@@ -35,5 +36,9 @@ def cband_scan(sigen, tunics, scope):
     df['transm'] = waveform2[1]
     df['mzi'] = waveform3[1]
     df['hcn'] = waveform4[1]
+
+
+    tunics.sweep_stop()
+    tunics.power_off()
 
     return df
