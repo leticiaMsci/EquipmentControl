@@ -132,8 +132,8 @@ step = "/Pol1_C-Band_Sweep"
 save_path = os.path.join(path+time_stamp+"_"+base_name)
 llb.folder(save_path)
 
-df.to_parquet(save_path+step+"C-BandSweep.parq")
-df_pol.to_parquet(save_path+step+"Piezo_PolSetting.parq")
+df.to_parquet(save_path+step+llb.time_stamp()+"C-BandSweep.parq")
+df_pol.to_parquet(save_path+step+llb.time_stamp()+"Piezo_PolSetting.parq")
 
 
 # %% OSA Sweep
@@ -143,7 +143,7 @@ att_in_0 = 10
 lbd_0 = 1551
 lbd_f = 1551.5#1565
 lbd_step = 0.001
-osa_w = 2
+osa_w = .5
 
 osa = aq63XX.AQ63XX()
 osa.ConnectOSA(isgpib = True, address = 13)
@@ -170,25 +170,28 @@ lbd_table=np.zeros((len(x_osa), nsteps))
 
 toolbar_width = len(lbd_list)
 
-
+scope.acquisition.time_per_record =2e-3
+scope._write(":TIMebase:ROLL:ENABLE OFF")
 for i, lbd in enumerate(lbd_list):
     tunics.wavelength(lbd)
+    #if i%10 == 0:
     osa.SweepRange(lbd - osa_w/2, lbd+osa_w/2, 2)
     osa.SingleSweep()
-    time.sleep(.5)
 
     x = osa.trace_data(axis = "X")
     y = osa.trace_data(axis = "Y")
     
     osa_table[:, i]=y[:]
     lbd_table[:, i]=x[:]
+    scope.measurement.initiate()
+    time.sleep(2e-3)
     transm_vec[i]=scope.channels[ch_transmission].measurement.fetch_waveform_measurement("voltage_average")
     reflec_vec[i]=scope.channels[ch_reflection].measurement.fetch_waveform_measurement("voltage_average")
     mzi_vec[i]=scope.channels[ch_mzi].measurement.fetch_waveform_measurement("voltage_average")
 
-    plt.plot(1e9*x,y)
-    plt.title(str(lbd)+"nm")
-    plt.show()
+#    plt.plot(1e9*x,y)
+#    plt.title(str(lbd)+"nm")
+#    plt.show()
 
 
 # %%
