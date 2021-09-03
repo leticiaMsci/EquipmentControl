@@ -16,11 +16,15 @@ def folder(my_folder):
 
 
 
-#def scope_avg(scope, channel):    
-#    scope.measurement.initiate()    
-#    time.sleep(timebase)
-#    vmean = scope.channels[channel].measurement.fetch_waveform_measurement("voltage_average")
-#    return vmean
+def scope_avg(scope, channels):    
+    scope.measurement.initiate()    
+    time.sleep(scope.acquisition.time_per_record)
+    vmean = []
+    for channel in channels:
+        vmean.append(scope.channels[channel].measurement.fetch_waveform_measurement("voltage_average"))
+    return vmean
+
+
 
 
 if __name__=='__main__':
