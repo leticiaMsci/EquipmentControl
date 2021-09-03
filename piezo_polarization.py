@@ -62,10 +62,12 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
     mzi = np.array(scope.channels[ch_mzi].measurement.fetch_waveform())
     hcn = np.array(scope.channels[ch_hcn].measurement.fetch_waveform())
-    plt.plot(transmission[0, ::100], transmission[1, ::100])
+    
     plt.plot(mzi[0, ::100], mzi[1, ::100])
     plt.plot(hcn[0, ::100], hcn[1, ::100])
+    plt.plot(transmission[0, ::100], transmission[1, ::100])
     plt.show()
+    
     df_pol = pd.DataFrame()
     df_pol['time'] = transmission[0]
     df_pol['transmission'] = transmission[1]
@@ -73,6 +75,7 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     df_pol['hcn'] = hcn[1]
 
     sigen.output_off()
+    tunics.power_off()
     
     return df_pol
 
