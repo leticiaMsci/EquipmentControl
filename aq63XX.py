@@ -61,6 +61,7 @@ class AQ63XX:
             self.port = ethport
             self.user = ipuser
             self.passwd = ippass
+
             try:
                 if self.gpib:
                     osaname = "GPIB0::" + str(self.gpibAddr) + "::INSTR"
@@ -79,7 +80,8 @@ class AQ63XX:
                 print("Error opening OSA! Is it connected? B")
                 pass
     
-    def InitOSA(self, fullInit=True, binarymode=True, tracen=0, write=True):
+    def InitOSA(self, fullInit=True, print_bool=True, binarymode=True, tracen=0, write=True):
+        self.print_bool = print_bool
         if self.osaOK:
             self.binary = binarymode
             self.tracen = tracen
@@ -97,7 +99,7 @@ class AQ63XX:
             self.osa.write(':INITiate:SMODe SINGle')
             self.osa.write(':CALibration:ZERO off')
             self.osa.write(':CALibration:ZERO once')
-            time.sleep(1)
+            time.sleep(5)
             #osa.write('*WAI')
             
             self.ChangeTrace(self.tracen, wr=write)
@@ -119,7 +121,7 @@ class AQ63XX:
         if self.osaOK:
             self.CloseOSA()
             self.ConnectOSA()
-            self.InitOSA(self.gpib, self.gpibAddr, self.alias)
+            self.InitOSA()
 
     def HorizonScale(self, is_wavelength):
         if is_wavelength:
@@ -404,16 +406,15 @@ class AQ63XX:
     def SweepRange(self, lbd_ini, lbd_end, resolution,
                     lbd_unit = 'NM', resolution_unit = 'PM'):
         if lbd_unit == 'NM':
-            print('X-axis set as Wavelength')
+            if self.print_bool: print('X-axis set as Wavelength')
             self.HorizonScale(True) 
         elif lbd_unit == 'THZ':
-            print('X-axis set as Frequency')
+            if self.print_bool: print('X-axis set as Frequency')
             self.HorizonScale(False)
         else:
             print("Invalid unit. Possibilities: 'NM' or 'THz'")
 
         self.osa.write(':SENSe:WAVelength:STARt {:.3f}'.format(lbd_ini)+lbd_unit)
-        print(':SENSe:WAVelength:STARt {:.3f}'.format(lbd_ini)+lbd_unit)
         self.osa.write(':SENSe:WAVelength:STOP {:.3f}'.format(lbd_end)+lbd_unit)
         self.osa.write(':SENSe:BANDwidth:RESolution {:.3f}'.format(resolution)+resolution_unit)
         self.osa.write(':TRACe:ACTive TRA')
@@ -467,16 +468,18 @@ class AQ63XX:
         TODO: figure out why OSA starts zeroing in the middle of scan and how to prevent this
                 => possibility: insert try/except
         """
-        self.osa.open()
         self.osa.write(':TRACe:'+axis+'? TRA')
-        data_raw = self.osa.read_raw()
-        t=0
-        while not self.EndedSweep() and t<10:
-            print("Sweep did not end")
-            time.sleep(1)
-            t=t+1
+
+        counter = 0
+        while counter<10:
+            try:
+                data_raw = self.osa.read_raw()
+                return self.binblock_raw(data_raw) #np.array([1e9*float(i) for i in xraw.decode().split(',')]), xraw
+            except:
+                counter = counter+1
+                time.sleep(2)
+        raise Exception("Timeout retrieving data from OSA AQ63XX")
         
-        return self.binblock_raw(data_raw) #np.array([1e9*float(i) for i in xraw.decode().split(',')]), xraw
 
 
 # %%
