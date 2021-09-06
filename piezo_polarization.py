@@ -43,6 +43,7 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     sigen.output_on()
 
     #oscilloscope trigger on aux port
+    scope._write(":ACQuire:POINts 1000000")
     scope._write(":RUN")
     scope._write(':TRIGger:EDGE:SOURce AUX')
     scope._write(":TRIGger:LEVel AUX, 1")
@@ -70,7 +71,7 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     
     df_pol = pd.DataFrame()
     df_pol['time'] = transmission[0]
-    df_pol['transmission'] = transmission[1]
+    df_pol['cav'] = transmission[1]
     df_pol['mzi'] = mzi[1]
     df_pol['hcn'] = hcn[1]
 
