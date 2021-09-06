@@ -480,7 +480,20 @@ class AQ63XX:
                 time.sleep(2)
         raise Exception("Timeout retrieving data from OSA AQ63XX")
         
+    def sensibility(self, sens):
+        """Changes sensibility mode (page 66/240 at the Remote Control User's Manual)
 
+        Args:
+            sens (int): Sensibility correspondence is as follows:
+                    0 => NORM/HOLD
+                    1 => NORM/AUTO
+                    2 => MID
+                    3 => HIGH1
+                    4 => HIGH2
+                    5 => HIGH3
+                    6 => NORM
+        """
+        sens.osa.write(":SENSe:SENSe "+str(sens))
 
 # %%
 if __name__ == '__main__':
