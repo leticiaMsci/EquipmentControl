@@ -17,9 +17,10 @@ class T100R:
     sweep_repeat_mode = 'ONEWay' #Options: 'ONEWay' (One Way repeat mode), 'TWOWay' (Two Way repeat mode)
     sweep_max_cycles = 5 #Maximum number of cycles for wavelength sweep
     
-    def __init__(self, ip = ip, wavelength_mode = wavelength_mode):
+    def __init__(self, ip = ip, wavelength_mode = wavelength_mode, print_bool = True):
         print('Initializing ' + ip, end="")
         self.ip_addr = ip
+        self.print_bool = print_bool
 
         try:
             self.tunics =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -128,6 +129,7 @@ class T100R:
         '''
 
         '''
+        self.query("SOURce:WAVelength:SWEep:DWELl MIN")
         self.query('SOURce:WAVelength:SWEep:MODE '+sweep_mode)
         self.query('SOURce:WAVelength:SWEep:CYCLES '+ str(sweep_max_cycles))
         self.query('SOURce:WAVelength:SWEep:REPeat '+sweep_repeat_mode)
@@ -153,6 +155,21 @@ class T100R:
         self.send('SOURce:WAVelength:SWEep:STATe STOP')
         output =self.read()
         return output
+
+    def sweep_is_running(self):
+        self.send("SOURce:WAVelength:SWEep:STATe?")
+        return int(self.read())
+    
+    def sweep_wait(self, max_time):
+        time0 = time.time()
+        while time.time()-time0<max_time:
+            if self.sweep_is_running():
+                if self.print_bool: print(".", end="")
+            else:
+                if self.print_bool: print("Sweep finished")
+                return 1
+        print("sweep not finished")
+        return 0
 
     def wavelength(self, lbd_nm, lbd_unit = 'NM'):
         return self.query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
