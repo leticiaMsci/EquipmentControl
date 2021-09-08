@@ -2,7 +2,7 @@
 import time
 import os
 
-def time_stamp(precision_minute = True, precision_second = False):
+def time_stamp(precision_minute = True, precision_second = True):
     if not precision_minute:
         return time.strftime("%Y-%m-%d_%H")
     elif not precision_second:
