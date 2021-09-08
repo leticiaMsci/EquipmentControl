@@ -149,7 +149,7 @@ osa = aq63XX.AQ63XX()
 osa.ConnectOSA(isgpib = True, address = 13)
 osa.InitOSA()
 #osa.osa.write('AUTO OFFSET OFF')
-osa.SweepRange(lbd_ini-osa_w/2, lbd_ini+osa_w/2, 2)
+osa.SweepRange(lbd_0-osa_w/2, lbd_0+osa_w/2, 2)
 osa.SingleSweep()
 x_osa = 1e9*osa.trace_data(axis = "X")
 y_osa = osa.trace_data(axis = "Y")
@@ -168,7 +168,6 @@ mzi_vec=np.zeros(nsteps)
 osa_table=np.zeros((len(x_osa), nsteps))
 lbd_table=np.zeros((len(x_osa), nsteps))
 
-toolbar_width = len(lbd_list)
 
 scope.acquisition.time_per_record =2e-3
 scope._write(":TIMebase:ROLL:ENABLE OFF")
