@@ -171,11 +171,26 @@ class T100R:
         print("sweep not finished")
         return 0
 
-    def wavelength(self, lbd_nm, lbd_unit = 'NM'):
+    def wavelength(self, lbd_nm, lbd_unit = 'NM', lbd_step = None, lbd_step_unit = 'NM'):
+        if lbd_step is not None:
+            self.query('SOURce:WAVelength:SWEep:STEP:WIDTh {:.3f} '.format(lbd_step) + lbd_step_unit)
+        
         return self.query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
+        
     
-    def wavelength_step(self, lbd_step, lbd_step_unit = 'NM'):
-        return self.query('SOURce:WAVelength:SWEep:STEP:WIDTh {:.3f} '.format(lbd_step) + lbd_step_unit)
+    def wavelength_step(self):
+        self.send('SOURce:WAVelength:SWEep:STEP:NEXT')
+
+    def loop_search(self):
+        while True:
+            input_ = input("Input tunics wavelength. To stop type 'stop'.")
+            try:
+                lbd = int(input_)
+            except ValueError:
+                break
+            finally:
+                self.wavelength(lbd)
+
 
 
 
