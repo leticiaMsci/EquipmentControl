@@ -403,8 +403,8 @@ class AQ63XX:
         else:
             return True
             
-    def SweepRange(self, lbd_ini, lbd_end, resolution,
-                    lbd_unit = 'NM', resolution_unit = 'PM'):
+    def SweepRange(self, lbd_ini, lbd_end, #resolution, resolution_unit = 'PM',
+                    lbd_unit = 'NM'):
         if lbd_unit == 'NM':
             if self.print_bool: print('X-axis set as Wavelength')
             self.HorizonScale(True) 
@@ -416,7 +416,7 @@ class AQ63XX:
 
         self.osa.write(':SENSe:WAVelength:STARt {:.3f}'.format(lbd_ini)+lbd_unit)
         self.osa.write(':SENSe:WAVelength:STOP {:.3f}'.format(lbd_end)+lbd_unit)
-        self.osa.write(':SENSe:BANDwidth:RESolution {:.3f}'.format(resolution)+resolution_unit)
+        #self.osa.write(':SENSe:BANDwidth:RESolution {:.3f}'.format(resolution)+resolution_unit)
         self.osa.write(':TRACe:ACTive TRA')
 
 
@@ -480,11 +480,11 @@ class AQ63XX:
                 time.sleep(2)
         raise Exception("Timeout retrieving data from OSA AQ63XX")
         
-    def sensibility(self, sens):
+    def sensibility(self, sensibility):
         """Changes sensibility mode (page 66/240 at the Remote Control User's Manual)
 
         Args:
-            sens (int): Sensibility correspondence is as follows:
+            sensibility (int): Sensibility correspondence is as follows:
                     0 => NORM/HOLD
                     1 => NORM/AUTO
                     2 => MID
@@ -493,7 +493,7 @@ class AQ63XX:
                     5 => HIGH3
                     6 => NORM
         """
-        sens.osa.write(":SENSe:SENSe "+str(sens))
+        self.osa.write(":SENSe:SENSe "+str(sensibility))
 
 # %%
 if __name__ == '__main__':
