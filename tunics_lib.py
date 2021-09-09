@@ -182,14 +182,17 @@ class T100R:
         self.send('SOURce:WAVelength:SWEep:STEP:NEXT')
 
     def loop_search(self):
+        lbd = 0
         while True:
             input_ = input("Input tunics wavelength. To stop type 'stop'.")
             try:
-                lbd = int(input_)
+                lbd = float(input_)
+                self.wavelength(lbd)
+                print(lbd)
             except ValueError:
                 break
-            finally:
-                self.wavelength(lbd)
+            
+        return lbd
 
 
 
