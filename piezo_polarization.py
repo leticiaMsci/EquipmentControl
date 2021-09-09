@@ -52,7 +52,7 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
 
     # 
     print("Is polarization set? y/n ")
-    pol = input()
+    pol = input("Is polarization set? y/n ")
     print(pol)
 
     if pol!='y' and pol!='Y':
@@ -80,3 +80,68 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     
     return df_pol
 
+def _piezo_start_scan(att_in, att_out, att_r, sigen, tunics, scope,
+    val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
+    sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550):
+
+    att_in.set_att(val_att_in)
+    att_out.set_att(val_att_out)
+    att_r.set_att(val_att_r)
+
+    sigen.ramp_config(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
+
+    tunics.power_on(power=5, lbd=lbd_piezo)
+
+    #sigen ramp
+    sigen.output_on()
+
+    #oscilloscope trigger on aux port
+    scope._write(":ACQuire:POINts 1000000")
+    scope._write(":RUN")
+    scope._write(':TRIGger:EDGE:SOURce AUX')
+    scope._write(":TRIGger:LEVel AUX, 1")
+    scope._write(":TIMebase:ROLL:ENABLE OFF")
+    scope.acquisition.time_per_record =2.5/sigen_freq
+
+def _piezo_end_scan(sigen, tunics, scope,
+    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
+
+    transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
+    reflec = np.array(scope.channels[ch_reflection].measurement.fetch_waveform())
+    mzi = np.array(scope.channels[ch_mzi].measurement.fetch_waveform())
+    hcn = np.array(scope.channels[ch_hcn].measurement.fetch_waveform())
+    
+    plt.plot(mzi[0, ::100], mzi[1, ::100])
+    plt.plot(hcn[0, ::100], hcn[1, ::100])
+    plt.plot(transmission[0, ::100], transmission[1, ::100])
+    plt.show()
+    
+    df_pol = pd.DataFrame()
+    df_pol['time'] = transmission[0]
+    df_pol['cav'] = transmission[1]
+    df_pol['reflec'] = reflec[1]
+    df_pol['mzi'] = mzi[1]
+    df_pol['hcn'] = hcn[1]
+
+    sigen.output_off()
+    tunics.power_off()
+    
+    return df_pol
+
+
+def piezo_search(att_in, att_out, att_r, sigen, tunics, scope,
+    val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
+    sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550,
+    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
+
+    _piezo_start_scan(att_in, att_out, att_r, sigen, tunics, scope,
+        val_att_in = val_att_in, val_att_r = val_att_r, val_att_out=val_att_out,
+        sigen_freq = sigen_freq, sigen_amplitude=sigen_amplitude, lbd_piezo=lbd_piezo)
+    
+    lbd = tunics.loop_search()
+
+    _piezo_end_scan(sigen, tunics, scope,
+        ch_reflection = ch_reflection, ch_transmission = ch_transmission, 
+        ch_mzi = ch_mzi, ch_hcn=ch_hcn)
+
+    return lbd
