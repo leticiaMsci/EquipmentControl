@@ -53,7 +53,7 @@ class CalibrationUnsuccessful(Exception):
         super().__init__(self.message)
 
     def __str__(self):
-        return f'{self.message} {self.err_tshd} '
+        return f'{self.message} {self.err_tshd}. Consider reversing your data with function reverse(data).'
 
 
 
@@ -61,7 +61,7 @@ def reverse(data):
     data = data[::-1].reset_index().copy()
     return data
 
-def cav_treat(data, increasing_wlg = True, 
+def cav_treat(data, 
         envPeak_delta = param['cav_envPeak_delta'], envPeak_smooth = param["cav_envPeak_smooth"], 
         envPeak_sg = param["cav_envPeak_sg"]):
     """If wavelength is increasing, inverts data. It also normalizes the 'cav' entry by its upper envelope.
@@ -73,9 +73,6 @@ def cav_treat(data, increasing_wlg = True,
         envPeak_smooth (float, optional): envPeak parameter.
         envPeak_sg (int, optional): envPeak parameter.
     """
-    
-    if increasing_wlg: 
-        data = reverse(data)
 
     ylower, data['yupper_cav'] = mlt.envPeak(data.cav.values, delta=envPeak_delta,  smooth=envPeak_smooth, sg_order=envPeak_sg)
     data['cav_n'] = data.cav/(data['yupper_cav'])
@@ -347,10 +344,10 @@ nist.head()
 
 fname='C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-09-02_OpticalTransmission\\2021-09-07-11_OpticalTransmission_BareSphere-238umDiameter_Tunics-Laser-5nms-Pol1_C-Band\\2021-09-07-11-44_Att_in34_C-BandSweep.parq'
 data_raw = pd.read_parquet(fname)
-
+data_raw = data_raw[::-1].reset_index()
 #try:
 if True:
-    data_raw = cav_treat(data_raw, increasing_wlg = True)
+    data_raw = cav_treat(data_raw)
     data_raw = mzi_treat(data_raw)
 
     ind_peaks_mzi_ = mzi_peaks(data_raw)
