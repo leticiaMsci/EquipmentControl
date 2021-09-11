@@ -5,6 +5,7 @@ import ivi
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import time
 
 if __name__=='__main__':
     daq_port = 'Dev1/ao1'
@@ -35,12 +36,12 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     att_out.set_att(val_att_out)
     att_r.set_att(val_att_r)
 
-    sigen.ramp_config(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
-
     tunics.power_on(power=5, lbd=lbd_piezo)
 
     #sigen ramp
-    sigen.output_on()
+    sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
+    time.sleep(1)
+    sigen.output.on()
 
     #oscilloscope trigger on aux port
     scope._write(":ACQuire:POINts 1000000")
@@ -56,7 +57,7 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     print(pol)
 
     if pol!='y' and pol!='Y':
-        sigen.output_off()
+        sigen.output.off()
         raise Exception("Polarization not successful")
 
     print("Polarization set successfully.")
@@ -75,7 +76,7 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     df_pol['mzi'] = mzi[1]
     df_pol['hcn'] = hcn[1]
 
-    sigen.output_off()
+    sigen.output.off()
     tunics.power_off()
     
     return df_pol
@@ -88,12 +89,11 @@ def _piezo_start_scan(att_in, att_out, att_r, sigen, tunics, scope,
     att_out.set_att(val_att_out)
     att_r.set_att(val_att_r)
 
-    sigen.ramp_config(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
-
     tunics.power_on(power=5, lbd=lbd_piezo)
 
     #sigen ramp
-    sigen.output_on()
+    sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
+    sigen.output.on()
 
     #oscilloscope trigger on aux port
     scope._write(":ACQuire:POINts 1000000")
@@ -123,7 +123,7 @@ def _piezo_end_scan(sigen, tunics, scope,
     df_pol['mzi'] = mzi[1]
     df_pol['hcn'] = hcn[1]
 
-    sigen.output_off()
+    sigen.output.off()
     tunics.power_off()
     
     return df_pol
