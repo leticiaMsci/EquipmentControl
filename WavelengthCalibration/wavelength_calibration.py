@@ -1,18 +1,60 @@
-"""This module contains functions to automatically calibrate in frequency our experimental data containing a fiber-MZI and a Wavelength Reference Gas cell.
-    The MZI acts as a frequency ruler and the gas spectra provides a reference wavelength (one peak) plus a way to verify of the calibration was successful (by comparing the other peaks with their nominal wavelengths).
+"""This module contains functions to automatically calibrate in
+frequency our experimental data containing a fiber-MZI and a
+Wavelength Reference Gas cell.
 
-    This module must be acompanied by a .csv file containing the reference wavelength data.
-    Your data must be passed as a dataframe with columns [\'cav\', \'mzi\', \'hcn\'].
+This module must be acompanied by a .csv file containing the
+reference wavelength data.
 
-    Raises:
-        NistFileNotFound: Raises error if reference file cannot be loded (probaly because it is not in the same directory).
-            (TODO: Embed possibility of using acetylen reference and make it easy for the end-user.)
-        NistIncorrectKeys: Raised if nist file does not contain the correct column keys.
-        CalibrationUnsuccessful: Raises error if it couldn't optimize the reference wavelength to minimize errors when comparing the other HCN peaks.
-        DataIncorrectKeys: Raises error if data does not contain correct colums keys.
+Your data must be passed as a dataframe with columns:
+    [\'cav\', \'mzi\', \'hcn\'].
 
-    Returns:
-        [type]: [description]
+
+Example 1 - Using out of the box:
+-------
+import wavelength_calibration as wc
+import pandas as pd
+
+data_raw = pd.read_parquet('some_experiment.parq')
+data_calibrated = wc.auto_calibrate(data_raw, 'path_for_saving_calibrated_data')
+# this will output a plot showing the calibrated HCN spectrum and will save a file
+# named 'path_for_saving_calibrated_data_Processed.parq'
+
+
+Example 2 - How to change parameters:
+-------
+import wavelength_calibration as wc
+
+#first, you must first check if MZI and HCN peaks are being identified correctly:
+wc.param['plot_steps_bool'] = True
+wc.mzi_treat(data_raw)
+wc.mzi_peaks(data_raw)
+wc.hcn_peaks(data_raw)
+
+#change the following parameters to smooth and normalize the data adequately
+wc.param['mzi_envPeak_delta'] = 0.01
+wc.param['mzi_envPeak_sg'] = 2
+wc.param['mzi_savitz_window'] = 5
+wc.param['mzi_savitz_order'] = 2
+
+#if peaks are not identified correctly, tune the following parameter
+#until wc.mzi_peaks gets the peaks correctly
+wc.param['mzi_peakdet_delta'] = 0.3
+
+#same for the hcn data:
+param['hcn_peakdet_delta'] = 0.33
+
+#plot again to see if it got any better
+wc.mzi_treat(data_raw)
+wc.mzi_peaks(data_raw)
+wc.hcn_peaks(data_raw)
+
+Raises:
+--------
+    NistFileNotFound: Raises error if reference file cannot be loded (probaly because it is not in the same directory).
+        (TODO: Embed possibility of using acetylen reference and make it easy for the end-user.)
+    NistIncorrectKeys: Raised if nist file does not contain the correct column keys.
+    CalibrationUnsuccessful: Raises error if it couldn't optimize the reference wavelength to minimize errors when comparing the other HCN peaks.
+    DataIncorrectKeys: Raises error if data does not contain correct colums keys.
 """
 
 #%%
@@ -248,7 +290,7 @@ def mzi_peaks(data, peakdet_delta=None, plot_steps_bool = None):
          
     return ind_peaks_mzi
 
-def hcn_peaks (data, peakdet_delta=None):
+def hcn_peaks(data, peakdet_delta=None):
     """identifies and return peaks in HCN (wavelength reference) data.
 
     Args:
@@ -414,10 +456,9 @@ def optimize_reference(data, ind_min_hcn, mintab_hcn,
             return data_i
     raise CalibrationUnsuccessful(err_tshd)
 
-def auto_calibrate(data_in, base_name, nist_path = param['nist_path'], forward_lbd_scan = True):
-    print(param)
+def auto_calibrate(data_in, base_name, nist_path = None, forward_lbd_scan = True):
+    if nist_path is None: nist_path = param['nist_path']
     nist = load_nist(nist_path)
-
 
     for key in ['cav', 'mzi', 'hcn']:
         if key not in data_in.keys():
@@ -453,6 +494,7 @@ def auto_calibrate(data_in, base_name, nist_path = param['nist_path'], forward_l
     print(base_name+'_Processed.parq')
 
     data.to_parquet(base_name+'_Processed.parq', compression='brotli')
+    return data
 #%%
 if __name__=='__main__':
     fname='C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-09-02_OpticalTransmission\\2021-09-07-11_OpticalTransmission_BareSphere-238umDiameter_Tunics-Laser-5nms-Pol1_C-Band\\2021-09-07-11-44_Att_in34_C-BandSweep.parq'
