@@ -324,7 +324,6 @@ class AQ63XX:
         return data_x, data_y
     
     def GetBinTrace(self):
-        print('Bin')
         if self.osaOK:
             data_y = self.osa.query_binary_values("trac:data:y? " + self.trace, 
                                             datatype='f', is_big_endian=False)
@@ -332,7 +331,7 @@ class AQ63XX:
                                             datatype='f', is_big_endian=False)
             return data_x, data_y
         else:
-            return np.zeros(self.traceLength), np.zeros(self.traceLength)
+            return None, None
     
     def GetASCIITrace(self):
         if self.osaOK:
