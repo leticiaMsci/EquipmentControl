@@ -1,17 +1,30 @@
+"""This module contains functions to automatically calibrate in frequency our experimental data containing a fiber-MZI and a Wavelength Reference Gas cell.
+    The MZI acts as a frequency ruler and the gas spectra provides a reference wavelength (one peak) plus a way to verify of the calibration was successful (by comparing the other peaks with their nominal wavelengths).
+
+    This module must be acompanied by a .csv file containing the reference wavelength data.
+    Your data must be passed as a dataframe with columns [\'cav\', \'mzi\', \'hcn\'].
+
+    Raises:
+        NistFileNotFound: Raises error if reference file cannot be loded (probaly because it is not in the same directory).
+            (TODO: Embed possibility of using acetylen reference and make it easy for the end-user.)
+        NistIncorrectKeys: Raised if nist file does not contain the correct column keys.
+        CalibrationUnsuccessful: Raises error if it couldn't optimize the reference wavelength to minimize errors when comparing the other HCN peaks.
+        DataIncorrectKeys: Raises error if data does not contain correct colums keys.
+
+    Returns:
+        [type]: [description]
+"""
+
 #%%
-import os, glob, gc
+import os
 import itertools
 import sys
 import progressbar
 import numpy as np
 import pandas as pd
-import hvplot.pandas
-import seaborn as sns
 import pyLPD.MLtools as mlt
 
-from matplotlib import rcParams
 from matplotlib import pyplot as plt
-from matplotlib.widgets import Slider
 from sympy import symbols, sqrt, diff, lambdify
 from scipy import constants, interpolate, signal, optimize
 from itertools import chain
@@ -19,8 +32,14 @@ from itertools import chain
 π = constants.pi
 c = constants.c
 
+nist_file = 'hcn_nist.csv'
+nist_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 param = {
+    'nist_path' : os.path.join(nist_dir, nist_file),
+    'hcn_peakdet_delta':0.3,
+
     'mzi_fiber_length': 1.49e-3, #in km
     'mzi_envPeak_delta': 0.01,
     'mzi_envPeak_sg': 1,
@@ -28,13 +47,11 @@ param = {
     'mzi_savitz_order': 2,
     'mzi_peakdet_delta': 0.3,
 
-    'hcn_peakdet_delta':0.3,
-
     'cav_envPeak_delta': 0.01,
     'cav_envPeak_smooth': 0.1,
     'cav_envPeak_sg': 1,
 
-    'plot_bool': False,
+    'plot_steps_bool': False,
     'err_tshd': 0.01 #(in THz) default threshold of maximum calibration error
 }
 
@@ -55,15 +72,53 @@ class CalibrationUnsuccessful(Exception):
     def __str__(self):
         return f'{self.message} {self.err_tshd}. Consider reversing your data with function reverse(data).'
 
+class NistFileNotFound(Exception):
+    def __init__(self, path, message = "Could not load nist reference."):
+        self.path =path
+        self.message = message
+        super().__init__(self.message)
+    def __str__(self):
+        return f'{self.message} Path: \'{self.path}\'. Please make sure that the file is in the same directory of '+__path__ +'\nAlternatively (not recommended) update file path on param[\'nist_path\']'
+
+class NistIncorrectKeys(Exception):
+    def __init__(self, expected, given, message = "Nist Wavelength Reference file has incorrect data or incorrect keys."):
+        self.expected = expected
+        self.given = given
+        self.message = message
+        super().__init__(self.message)
+    def __str__(self):
+        return f'{self.message}\nExpected {self.expected}\nReceived {self.given}'
+
+class DataIncorrectKeys(Exception):
+    def __init__(self, expected, given, message ="Dataframe does no contain the necessary information or incorrect keys (cav, mzi, hcn)."):
+        self.expected = expected
+        self.given = given
+        self.message = message
+        super().__init__(self.message)
+    def __str__(self):
+        return f'{self.message}\nExpected {self.expected}\nReceived {self.given}'
 
 
+def load_nist(nist_path):
+    try:
+        nist= pd.read_csv(nist_path,sep=',')
+        print("Successfully loaded wavelength reference file "+nist_path)
+    except:
+        raise NistFileNotFound(nist_path)
+    
+    handles =['R Branch','R-wavelength(nm)','P Branch','P-wavelength(nm)']
+    for key in handles:
+        if key not in nist.keys():
+            raise NistIncorrectKeys(handles, nist.keys())
+
+    return nist
+
+    
 def reverse(data):
     data = data[::-1].reset_index().copy()
     return data
 
-def cav_treat(data, 
-        envPeak_delta = param['cav_envPeak_delta'], envPeak_smooth = param["cav_envPeak_smooth"], 
-        envPeak_sg = param["cav_envPeak_sg"]):
+def cav_treat(data, envPeak_delta = None, envPeak_smooth = None, envPeak_sg = None):
     """If wavelength is increasing, inverts data. It also normalizes the 'cav' entry by its upper envelope.
 
     Args:
@@ -73,14 +128,19 @@ def cav_treat(data,
         envPeak_smooth (float, optional): envPeak parameter.
         envPeak_sg (int, optional): envPeak parameter.
     """
+    #setting default values (as defined in params) if not given:
+    if envPeak_delta is None: envPeak_delta = param['cav_envPeak_delta']
+    if envPeak_smooth is None: envPeak_smooth = param["cav_envPeak_smooth"]
+    if envPeak_sg is None: envPeak_sg = param["cav_envPeak_sg"]
 
+    #actual function
     ylower, data['yupper_cav'] = mlt.envPeak(data.cav.values, delta=envPeak_delta,  smooth=envPeak_smooth, sg_order=envPeak_sg)
     data['cav_n'] = data.cav/(data['yupper_cav'])
 
     return data
 
 
-def mzi_dispersion(L = 1.49e-3): # in km
+def mzi_dispersion(L = None): # in km
     """Defines dispersion functions of fiber-based MZI's.
 
     Args:
@@ -89,7 +149,10 @@ def mzi_dispersion(L = 1.49e-3): # in km
     Returns:
         symbolic dispersions
     """
+    #setting default values if not given
+    if L is None: L = param['mzi_fiber_length']
 
+    #actual function
     π = constants.pi
     c = constants.c
     B1, B2, B3 = 0.6961663, 0.4079426, 0.8974794
@@ -99,8 +162,6 @@ def mzi_dispersion(L = 1.49e-3): # in km
     n = sqrt(1+(B1*x**2)/(x**2-C1**2)+(B2*x**2)/(x**2-C2**2)+(B3*x**2)/(x**2-C3**2))
     ng = n - x*diff(n, x)
 
-
-    #print('ΔL_mzi = {0:.3} m'.format(1e3*L))
 
     #--------------------------------
     S0 = 0.082 # 0.082(3) ps/(nm².km)
@@ -119,9 +180,8 @@ def mzi_dispersion(L = 1.49e-3): # in km
     
     return x, D1_mzi, D2_mzi, D3_mzi
 
-def mzi_treat(data, envPeak_delta = param['mzi_envPeak_delta'], envPeak_sg = param['mzi_envPeak_sg'],
-             savitz_window = param['mzi_savitz_window'], savitz_order=param['mzi_savitz_order'], 
-             plot_bool = param['plot_bool']):
+def mzi_treat(data, envPeak_delta = None, envPeak_sg = None,
+             savitz_window = None, savitz_order=None, plot_steps_bool = None):
     """Normalizes MZI using lower and upper envelopes. It also smooths the MZI signal using a savitz golay filter.
 
     Args:
@@ -130,9 +190,16 @@ def mzi_treat(data, envPeak_delta = param['mzi_envPeak_delta'], envPeak_sg = par
         envPeak_sg (int, optional): envPeak parameter.
         savitz_window (int, optional): savitz golay parameter.
         savitz_order (int, optional): savitz golay parameter. 
-        plot_bool (bool, optional): If true plots MZI signal and smoothed. Defaults to False.
+        plot_steps_bool (bool, optional): If true plots MZI signal and smoothed. Defaults to False.
     """
-    
+    #setting default values if not given
+    if envPeak_delta is None: envPeak_delta = param['mzi_envPeak_delta']
+    if envPeak_sg is None: envPeak_sg = param['mzi_envPeak_sg']
+    if savitz_window is None: savitz_window = param['mzi_savitz_window']
+    if savitz_order is None: savitz_order=param['mzi_savitz_order']
+    if plot_steps_bool is None: plot_steps_bool = param['plot_steps_bool']
+
+    #actual function
     ylower_mzi, yupper_mzi = mlt.envPeak(data.mzi.values, delta=envPeak_delta, sg_order=envPeak_sg)# Finding lower and upper envelope
     data['mzi_n'] = (data.mzi-ylower_mzi)/(yupper_mzi-ylower_mzi) # Normalizing data
     
@@ -140,7 +207,7 @@ def mzi_treat(data, envPeak_delta = param['mzi_envPeak_delta'], envPeak_sg = par
 
     data['mzi_s'] = mlt.savitzky_golay(data.mzi_n.values, window_size = savitz_window, order = savitz_order)
     
-    if plot_bool:
+    if plot_steps_bool:
         plt.figure(figsize=(12,3))
         mid_data = len(data)//2
         delta_data = min(100, int(0.1*mid_data))
@@ -151,21 +218,26 @@ def mzi_treat(data, envPeak_delta = param['mzi_envPeak_delta'], envPeak_sg = par
 
     return data
     
-def mzi_peaks(data, peakdet_delta=param['mzi_peakdet_delta'], plot_bool = param['plot_bool']):
+def mzi_peaks(data, peakdet_delta=None, plot_steps_bool = None):
     """determines MZI peaks
 
     Args:
         data (dataframe): raw data acquired. Should have 'mzi' key.
         peakdet_delta (float, optional): peakdet parameter.
-        plot_bool (bool, optional): If true displays plot of identified MZI peaks.
+        plot_steps_bool (bool, optional): If true displays plot of identified MZI peaks.
 
     Returns:
         [array]: returns indexes (in data) of mzi peaks.
     """
+    #setting default values if not given
+    if peakdet_delta is None: peakdet_delta = param['mzi_peakdet_delta']
+    if plot_steps_bool is None: plot_steps_bool = param['plot_steps_bool']
+
+    #actual function
     ind_max, maxtab, ind_min, mintab = mlt.peakdet(data.mzi_n.values, delta=peakdet_delta)
     ind_peaks_mzi = np.sort(np.concatenate((ind_min, ind_max), axis=0))
     
-    if plot_bool:
+    if plot_steps_bool:
         plt.figure(figsize=(12,3))
         npeaks = min(70, int(0.05*len(ind_max)))
         plt.plot(data.time[:ind_max[npeaks]], data.mzi_n[:ind_max[npeaks]], label='MZI')
@@ -176,23 +248,25 @@ def mzi_peaks(data, peakdet_delta=param['mzi_peakdet_delta'], plot_bool = param[
          
     return ind_peaks_mzi
 
-def hcn_peaks (data, peakdet_delta=param['hcn_peakdet_delta'], plot_bool=param['plot_bool']):
+def hcn_peaks (data, peakdet_delta=None):
     """identifies and return peaks in HCN (wavelength reference) data.
 
     Args:
         data (dataframe): raw data acquired. Should have 'hcn' key.
         peakdet_delta (float, optional): peakdet parameter.
-        plot_bool (bool, optional): If true displays detected peaks in HCN data.
+        plot_steps_bool (bool, optional): If true displays detected peaks in HCN data.
 
     Returns:
         [array, array]: indexes in data of hcn peaks, y value of hcn peaks.
     """
+    #setting default values if not given
+    if peakdet_delta is None: peakdet_delta = param['hcn_peakdet_delta']
 
+    #actual function
     data['hcn_n'] = (data.hcn - data.hcn.min())/(data.hcn.max() - data.hcn.min())
-
     ind_max_hcn, maxtab_hcn, ind_min_hcn, mintab_hcn = mlt.peakdet(data.hcn_n.values, peakdet_delta)
     
-    if plot_bool:
+    if param['plot_steps_bool']:
         plt.figure(figsize=(21,4))
         plt.plot(data.time[:], data.hcn_n[:], label='HCN')
         plt.scatter(data.time[ind_min_hcn], mintab_hcn, c='g', s=50, label='min')
@@ -265,9 +339,9 @@ def plot_calibration(data_i, ind_min_hcn, mintab_hcn, nist, save_bool, base_name
     colors = itertools.cycle(['r', 'g', 'm'])
     #----
     plt.stem(1e-3*c/nist['R-wavelength(nm)'], 1.5*np.ones(len(nist)),
-             'r',markerfmt='o',label='R-branch',use_line_collection=True)
+             'r',markerfmt='o',label='R-branch')
     plt.stem(1e-3*c/nist['P-wavelength(nm)'], 1.5*np.ones(len(nist)),
-             'b',markerfmt='o',label='P-branch',use_line_collection=True)
+             'b',markerfmt='o',label='P-branch')
     #---- Annotations
     ax = plt.gca()
     for ii in range(0,len(ind_min_hcn)):
@@ -293,7 +367,7 @@ def plot_calibration(data_i, ind_min_hcn, mintab_hcn, nist, save_bool, base_name
 
 def optimize_reference(data, ind_min_hcn, mintab_hcn, 
                        ind_peaks_mzi, nist, save_bool, base_name,
-                       err_tshd = param['err_tshd']):
+                       err_tshd = None):
     """Chooses the middle hcn data peak and scans the reference wavelength to find the one that
     minimizes the error for the other hcn peaks.
 
@@ -307,11 +381,16 @@ def optimize_reference(data, ind_min_hcn, mintab_hcn,
         base_name (str, optional): Path and root name of output pdf file. Defaults to "./".
 
     Raises:
-        Exception: "Calibration Unsuccessful."
+        CalibrationUnsuccessful: if none of the lbd_guess in lbd_ref engender a calibration 
+        error of other peaks within err_tshd
 
     Returns:
         dataframe: calibrated data.
     """
+    #setting default values if not given
+    if err_tshd is None: err_tshd = param['err_tshd']
+    
+    #actual function
     c = constants.c
 
     peak_guess = len(ind_min_hcn)//2
@@ -319,7 +398,6 @@ def optimize_reference(data, ind_min_hcn, mintab_hcn,
     
     print("Optimizing reference wavelength:")
     for jj, lbd_guess in enumerate(lbd_ref[:]):
-        lbd_ref_temp = np.copy(lbd_ref)
         data_i = calibration(data, lbd_guess,  peak_guess, ind_min_hcn, ind_peaks_mzi)
         meas_freq = data_i.freq.values[ind_min_hcn]
         error_tab = []
@@ -336,30 +414,69 @@ def optimize_reference(data, ind_min_hcn, mintab_hcn,
             return data_i
     raise CalibrationUnsuccessful(err_tshd)
 
+def auto_calibrate(data_in, base_name, nist_path = param['nist_path'], forward_lbd_scan = True):
+    print(param)
+    nist = load_nist(nist_path)
+
+
+    for key in ['cav', 'mzi', 'hcn']:
+        if key not in data_in.keys():
+            raise DataIncorrectKeys(['cav', 'mzi', 'hcn'] , data_in.keys())
+
+    if forward_lbd_scan:
+        data_raw = data_in[::-1].reset_index().copy()
+
+    try:
+        data_raw = cav_treat(data_raw)
+        data_raw = mzi_treat(data_raw)
+
+        ind_peaks_mzi_ = mzi_peaks(data_raw)
+        ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
+        data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, 
+                        save_bool = True, base_name = base_name)
+    except CalibrationUnsuccessful:
+        data_raw = data_raw[::-1].reset_index().copy()
+
+        ind_peaks_mzi_ = mzi_peaks(data_raw)
+        ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
+        data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, 
+                        save_bool = True, base_name = base_name)
+
+    data = pd.DataFrame()
+
+    data['freq'] = data_i.freq
+    data['mzi'] = data_i.mzi_s
+    data['cav'] = data_i.cav_n
+    data['hcn'] = data_i.hcn
+    data['reflec'] = data_i.reflec
+
+    print(base_name+'_Processed.parq')
+
+    data.to_parquet(base_name+'_Processed.parq', compression='brotli')
 #%%
-nist= pd.read_csv('C:/Users/lpd/Documents/Leticia/DFS/EquipmentControl/hcn_nist.csv',sep=',')
-nist.head()
+if __name__=='__main__':
+    fname='C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-09-02_OpticalTransmission\\2021-09-07-11_OpticalTransmission_BareSphere-238umDiameter_Tunics-Laser-5nms-Pol1_C-Band\\2021-09-07-11-44_Att_in34_C-BandSweep.parq'
+    data_raw = pd.read_parquet(fname)
+    nist = load_nist(param['nist_path'])
+    #try:
+    if False:
+        data_raw = cav_treat(data_raw)
+        data_raw = mzi_treat(data_raw)
 
-#%%
+        ind_peaks_mzi_ = mzi_peaks(data_raw)
+        ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
+        data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, save_bool = False, base_name = fname[:-5])
+    #except CalibrationUnsuccessful:
+    if False:
+        data_raw = reverse(data_raw)
 
-fname='C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-09-02_OpticalTransmission\\2021-09-07-11_OpticalTransmission_BareSphere-238umDiameter_Tunics-Laser-5nms-Pol1_C-Band\\2021-09-07-11-44_Att_in34_C-BandSweep.parq'
-data_raw = pd.read_parquet(fname)
-data_raw = data_raw[::-1].reset_index()
-#try:
-if True:
-    data_raw = cav_treat(data_raw)
-    data_raw = mzi_treat(data_raw)
+        ind_peaks_mzi_ = mzi_peaks(data_raw)
+        ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
+        data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, save_bool = False, base_name = fname[:-5])
 
-    ind_peaks_mzi_ = mzi_peaks(data_raw)
-    ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
-    data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, save_bool = False, base_name = fname[:-5])
-#except CalibrationUnsuccessful:
-if True:
-    data_raw = reverse(data_raw)
+    base_name = fname[:-6]
+    auto_calibrate(data_raw, base_name, forward_lbd_scan = True)
 
-    ind_peaks_mzi_ = mzi_peaks(data_raw)
-    ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
-    data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, save_bool = False, base_name = fname[:-5])
 
 
 # %%
