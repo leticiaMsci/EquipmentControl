@@ -19,7 +19,7 @@ class Sigen:
                 high_impedance = True, v_limits = True):
         self.rm = visa.ResourceManager()
         try:
-            self.sigen = self.rm.open_resource(_sigen_id)
+            self.sigen = self.rm.open_resource(_sigen_id, read_termination="\n")
             print("Sigen IDN: "+self.sigen.query("*IDN?"))
         except:
             raise Exception("Could not open signal generator "+_sigen_id)
@@ -49,13 +49,16 @@ class Sigen:
         def _write(self, msg):
             self.outer.write(msg)
 
+        def _opc(self):
+            return self.outer.opc()
+
         def on(self):
             self._write('OUTPut ON')
-            return self.opc()
+            return self._opc()
 
         def off(self):
             self._write('OUTPut OFF')
-            return self.opc()
+            return self._opc()
         
         def high_impedance(self):
             self._write('OUTPut:LOAD INF')
@@ -111,7 +114,7 @@ class Sigen:
                 phase (float): phase in degrees
 
             Returns:
-                str: expected output is "1\n" of "*OPC?" command
+                str: expected output is "1" of "*OPC?" command
             """
             self._write("FUNCtion SIN")
             self._write('FREQ {:.3f}'.format(frequency))
@@ -124,6 +127,8 @@ class Sigen:
 if __name__=='__main__':
      sigen = Sigen(_sigen_id)
      sigen.waveforms.ramp(symmetry=75, frequency=3.5, amplitude=2, offset=0)
+     sigen.output.on()
+
 
      
      
