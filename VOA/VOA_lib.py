@@ -63,7 +63,7 @@ class VOA:
     docstring
     """
 
-    def __init__(self, daq_port, calib_filename):
+    def __init__(self, daq_port, calib_filename, att_value=None):
         """initializes VOA attenuator
 
         Args:
@@ -94,6 +94,9 @@ class VOA:
         self.calib_function = eval(calib_info["calib_function"])
         self.calib_param = calib_info["calib_param"]
         self.inverse_function = eval(calib_info["inverse_function"])
+
+        if att_value is not None:
+            self.set_att(att_value)
 
     def daq_write_voltage(self, voltage):
         dev_id = self.daq_port
