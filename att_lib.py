@@ -8,7 +8,7 @@ class Att:
     """
     docstr
     """
-    def __init__(self, resource_str, i_loss=None,
+    def __init__(self, resource_str, i_loss=None, att_value = None,
                 read_str='\n', write_str='\r', query_delay=0.5, timeout=10):
         """
         # Delay in seconds
@@ -29,7 +29,8 @@ class Att:
             self.set_insertion_loss(i_loss)
             self.i_loss = i_loss          
 
-        
+        if att_value is not None:
+            self.set_att(att_value)
 
     def query(self, command):
         '''
