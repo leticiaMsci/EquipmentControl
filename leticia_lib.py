@@ -24,6 +24,12 @@ def scope_avg(scope, channels):
         vmean.append(scope.channels[channel].measurement.fetch_waveform_measurement("voltage_average"))
     return vmean
 
+def balanced_att(val_total, val_in, lst_att_in, lst_att_out):
+    for att_in in lst_att_in:
+        att_in.set_att(val_in)
+    for att_out in lst_att_out:
+        att_out.set_att(val_total-val_in)
+
 
 
 
