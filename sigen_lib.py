@@ -23,6 +23,7 @@ class Sigen:
             print("Sigen IDN: "+self.sigen.query("*IDN?"))
         except:
             raise Exception("Could not open signal generator "+_sigen_id)
+        
         #instantiating inner classes
         self.output = self.Output(self)
         self.waveforms = self.Waveforms(self)
@@ -81,7 +82,7 @@ class Sigen:
         def _opc(self):
             return self.outer.opc()
 
-        def ramp(self, symmetry, frequency, amplitude, offset):
+        def ramp(self, symmetry = None, frequency= None, amplitude= None, offset= None):
             """Defines ramp output function with necessary parameters
 
             Args:
@@ -94,15 +95,15 @@ class Sigen:
                 str: expected output is "1\n" of "*OPC?" command
             """
             self._write('FUNCtion RAMP')
+            if symmetry is not None:
+                if symmetry>=0 and symmetry<= 100:
+                    self._write('FUNCtion:RAMP:SYMMetry {:.3f}'.format(symmetry))
+                else:
+                    raise Exception("Symmetry value is out of bounds. It should be in the interval [0,100].")
 
-            if symmetry>=0 and symmetry<= 100:
-                self._write('FUNCtion:RAMP:SYMMetry {:.3f}'.format(symmetry))
-            else:
-                raise Exception("Symmetry value is out of bounds. It should be in the interval [0,100].")
-
-            self._write('FREQ {:.3f}'.format(frequency))
-            self._write('VOLTage {:.3f}'.format(amplitude))
-            self._write('VOLTage:OFFSet {:.3f}'.format(offset))
+            if frequency is not None: self._write('FREQ {:.3f}'.format(frequency))
+            if amplitude is not None: self._write('VOLTage {:.3f}'.format(amplitude))
+            if offset is not None: self._write('VOLTage:OFFSet {:.3f}'.format(offset))
             return self._opc()
 
         def sine(self, frequency, volt_high, volt_low, phase):
@@ -125,9 +126,14 @@ class Sigen:
         
 # %%
 if __name__=='__main__':
-     sigen = Sigen(_sigen_id)
-     sigen.waveforms.ramp(symmetry=75, frequency=3.5, amplitude=2, offset=0)
-     sigen.output.on()
+    import time
+
+    sigen = Sigen(_sigen_id)
+    sigen.waveforms.ramp(symmetry=75, frequency=3.5, amplitude=2, offset=0)
+    sigen.output.on()
+
+    time.sleep(5)
+    sigen.output.off()
 
 
      
