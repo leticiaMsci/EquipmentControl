@@ -27,16 +27,16 @@ if __name__=='__main__':
     sigen = sigen_lib.Sigen(sigen_visa = sigen_id)
 
 
-def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
-    val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
+def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550,
-    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
+    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3,
+    val_att_in = None, val_att_r = None, val_att_out=None):
 
-    att_in.set_att(val_att_in)
-    att_out.set_att(val_att_out)
-    att_r.set_att(val_att_r)
+    if val_att_in is not None: att_in.set_att(val_att_in)
+    if val_att_out is not None: att_out.set_att(val_att_out)
+    if val_att_r is not None:att_r.set_att(val_att_r)
 
-    tunics.power_on(power=5, lbd=lbd_piezo)
+    tunics.power_on(power=3, lbd=lbd_piezo)
 
     #sigen ramp
     sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
@@ -81,29 +81,29 @@ def piezo_procedure(att_in, att_out, att_r, sigen, tunics, scope,
     
     return df_pol
 
-def _piezo_start_scan(att_in, att_out, att_r, sigen, tunics, scope,
-    val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
-    sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550):
+def start_scan( sigen, tunics, scope,
+    att_in= None, att_out= None, att_r= None,
+    val_att_in = None, val_att_r = None, val_att_out=None):
 
-    att_in.set_att(val_att_in)
-    att_out.set_att(val_att_out)
-    att_r.set_att(val_att_r)
+    if val_att_in is not None and att_in is not None:
+        att_in.set_att(val_att_in)
+    if val_att_out is not None and att_out is not None:
+        att_out.set_att(val_att_out)
+    if val_att_r is not None and att_r is not None:
+        att_r.set_att(val_att_r)
 
-    tunics.power_on(power=5, lbd=lbd_piezo)
-
-    #sigen ramp
-    sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
+    tunics.power_on()
     sigen.output.on()
 
     #oscilloscope trigger on aux port
-    scope._write(":ACQuire:POINts 1000000")
+    #scope._write(":ACQuire:POINts 1000000")
     scope._write(":RUN")
-    scope._write(':TRIGger:EDGE:SOURce AUX')
-    scope._write(":TRIGger:LEVel AUX, 1")
-    scope._write(":TIMebase:ROLL:ENABLE OFF")
-    scope.acquisition.time_per_record =2.5/sigen_freq
+    #scope._write(':TRIGger:EDGE:SOURce AUX')
+    #scope._write(":TRIGger:LEVel AUX, 1")
+    #scope._write(":TIMebase:ROLL:ENABLE OFF")
+    #scope.acquisition.time_per_record =2.5/sigen_freq
 
-def _piezo_end_scan(sigen, tunics, scope,
+def end_scan(sigen, tunics, scope,
     ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
 
     transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
@@ -129,18 +129,18 @@ def _piezo_end_scan(sigen, tunics, scope,
     return df_pol
 
 
-def piezo_search(att_in, att_out, att_r, sigen, tunics, scope,
+def wavelength_search(att_in, att_out, att_r, sigen, tunics, scope,
     val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
     sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550,
     ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
 
-    _piezo_start_scan(att_in, att_out, att_r, sigen, tunics, scope,
+    start_scan(att_in, att_out, att_r, sigen, tunics, scope,
         val_att_in = val_att_in, val_att_r = val_att_r, val_att_out=val_att_out,
         sigen_freq = sigen_freq, sigen_amplitude=sigen_amplitude, lbd_piezo=lbd_piezo)
     
     lbd = tunics.loop_search()
 
-    _piezo_end_scan(sigen, tunics, scope,
+    end_scan(sigen, tunics, scope,
         ch_reflection = ch_reflection, ch_transmission = ch_transmission, 
         ch_mzi = ch_mzi, ch_hcn=ch_hcn)
 
