@@ -178,8 +178,11 @@ class T100R:
         return self.query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
         
     
-    def wavelength_step(self):
+    def wavelength_step_next(self):
         self.send('SOURce:WAVelength:SWEep:STEP:NEXT')
+
+    def wavelength_step_prev(self):
+        self.send('SOURce:WAVelength:SWEep:STEP:PREVious')
 
     def loop_search(self):
         lbd = 0
