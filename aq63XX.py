@@ -62,23 +62,23 @@ class AQ63XX:
             self.user = ipuser
             self.passwd = ippass
 
-            try:
-                if self.gpib:
-                    osaname = "GPIB0::" + str(self.gpibAddr) + "::INSTR"
-                    print(osaname)
-                    self.osa = self.visarm.open_resource(osaname)
-                elif self.eth:
-                    osaname = "TCPIP0::" + self.ip + "::" + str(self.port) + "::SOCKET"
-                    self.osa = self.visarm.open_resource(osaname, read_termination="\r\n", timeout = 5000)
-                    self.osa.query('open "' + self.user + '"')
-                    self.osa.query(self.passwd)
-                if "AQ" in self.osa.query("*IDN?"):
-                    self.osaOK = True
-                else:
-                    print("Error opening OSA! Is it connected? A")
-            except:
-                print("Error opening OSA! Is it connected? B")
-                pass
+   #         try:
+            if self.gpib:
+                osaname = "GPIB0::" + str(self.gpibAddr) + "::INSTR"
+                print(osaname)
+                self.osa = self.visarm.open_resource(osaname)
+            elif self.eth:
+                osaname = "TCPIP0::" + self.ip + "::" + str(self.port) + "::SOCKET"
+                self.osa = self.visarm.open_resource(osaname, read_termination="\r\n", timeout = 5000)
+                self.osa.query('open "' + self.user + '"')
+                self.osa.query(self.passwd)
+            if "AQ" in self.osa.query("*IDN?"):
+                self.osaOK = True
+            else:
+                print("Error opening OSA! Is it connected? A")
+#            except:
+ #               print("Error opening OSA! Is it connected? B")
+  #              pass
     
     def InitOSA(self, fullInit=True, print_bool=True, binarymode=True, tracen=0, write=True):
         self.print_bool = print_bool
