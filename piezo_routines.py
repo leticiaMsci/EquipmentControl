@@ -7,24 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import time
 
-if __name__=='__main__':
-    daq_port = 'Dev1/ao1'
-    att_in_id = 'ASRL5::INSTR'
-    att_r_id = 'ASRL13::INSTR'
-    tunics_ip = 'yetula.ifi.unicamp.br'
-    sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
-    scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
-    #scope channels
-    ch_reflection = 0
-    ch_transmission = 1
-    ch_mzi = 2
-    ch_hcn=3
-    att_out = VOA_lib.VOA(daq_port,'VOA\calib_U00306.json')
-    att_in = att_lib.Att(resource_str = att_in_id)
-    att_r = att_lib.Att(resource_str = att_r_id)
-    tunics = tunics_lib.T100R(ip=tunics_ip)
-    scope = ivi.agilent.agilentDSOX92504A(scope_id, prefer_pyvisa = True)
-    sigen = sigen_lib.Sigen(sigen_visa = sigen_id)
+
 
 
 def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
@@ -36,7 +19,7 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     if val_att_out is not None: att_out.set_att(val_att_out)
     if val_att_r is not None:att_r.set_att(val_att_r)
 
-    tunics.power_on(power=3, lbd=lbd_piezo)
+    tunics.power.on(power=3, lbd=lbd_piezo)
 
     #sigen ramp
     sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
@@ -77,11 +60,11 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     df_pol['hcn'] = hcn[1]
 
     sigen.output.off()
-    tunics.power_off()
+    tunics.power.off()
     
     return df_pol
 
-def start_scan( sigen, tunics, scope,
+def start_scan( sigen, tunics, scope, sigen_freq,
     att_in= None, att_out= None, att_r= None,
     val_att_in = None, val_att_r = None, val_att_out=None):
 
@@ -92,16 +75,16 @@ def start_scan( sigen, tunics, scope,
     if val_att_r is not None and att_r is not None:
         att_r.set_att(val_att_r)
 
-    tunics.power_on()
+    tunics.power.on()
     sigen.output.on()
 
     #oscilloscope trigger on aux port
-    #scope._write(":ACQuire:POINts 1000000")
+    scope._write(":ACQuire:POINts 1000000")
     scope._write(":RUN")
-    #scope._write(':TRIGger:EDGE:SOURce AUX')
-    #scope._write(":TRIGger:LEVel AUX, 1")
-    #scope._write(":TIMebase:ROLL:ENABLE OFF")
-    #scope.acquisition.time_per_record =2.5/sigen_freq
+    scope._write(':TRIGger:EDGE:SOURce AUX')
+    scope._write(":TRIGger:LEVel AUX, 1")
+    scope._write(":TIMebase:ROLL:ENABLE OFF")
+    scope.acquisition.time_per_record =2.5/sigen_freq
 
 def end_scan(sigen, tunics, scope,
     ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
@@ -114,6 +97,7 @@ def end_scan(sigen, tunics, scope,
     plt.plot(mzi[0, ::100], mzi[1, ::100])
     plt.plot(hcn[0, ::100], hcn[1, ::100])
     plt.plot(transmission[0, ::100], transmission[1, ::100])
+    plt.plot(reflec[0, ::100], reflec[1, ::100])
     plt.show()
     
     df_pol = pd.DataFrame()
@@ -124,24 +108,36 @@ def end_scan(sigen, tunics, scope,
     df_pol['hcn'] = hcn[1]
 
     sigen.output.off()
-    tunics.power_off()
+    #tunics.power_off()
     
     return df_pol
 
 
-def wavelength_search(att_in, att_out, att_r, sigen, tunics, scope,
-    val_att_in = 32, val_att_r = 0.1, val_att_out=0.1,
-    sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550,
-    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
+def wavelength_search(sigen, tunics, scope, sigen_freq):
 
-    start_scan(att_in, att_out, att_r, sigen, tunics, scope,
-        val_att_in = val_att_in, val_att_r = val_att_r, val_att_out=val_att_out,
-        sigen_freq = sigen_freq, sigen_amplitude=sigen_amplitude, lbd_piezo=lbd_piezo)
+    start_scan(sigen, tunics, scope, sigen_freq)
     
-    lbd = tunics.loop_search()
+    lbd = tunics.wavelength.search()
 
-    end_scan(sigen, tunics, scope,
-        ch_reflection = ch_reflection, ch_transmission = ch_transmission, 
-        ch_mzi = ch_mzi, ch_hcn=ch_hcn)
+    end_scan(sigen, tunics, scope)
 
     return lbd
+
+if __name__=='__main__':
+    daq_port = 'Dev1/ao1'
+    att_in_id = 'ASRL5::INSTR'
+    att_r_id = 'ASRL13::INSTR'
+    tunics_ip = 'yetula.ifi.unicamp.br'
+    sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
+    scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
+    #scope channels
+    ch_reflection = 0
+    ch_transmission = 1
+    ch_mzi = 2
+    ch_hcn=3
+    att_out = VOA_lib.VOA(daq_port,'VOA\calib_U00306.json')
+    att_in = att_lib.Att(resource_str = att_in_id)
+    att_r = att_lib.Att(resource_str = att_r_id)
+    tunics = tunics_lib.T100R(ip=tunics_ip)
+    scope = ivi.agilent.agilentDSOX92504A(scope_id, prefer_pyvisa = True)
+    sigen = sigen_lib.Sigen(sigen_visa = sigen_id)
