@@ -30,7 +30,7 @@ def cband_scan(sigen, tunics, scope, config = True,
 
     time_frame = (lbd_end-lbd_ini)/lbd_speed
 
-    sigen.output_off()
+    sigen.output.off()
     time.sleep(.1)
 
     if config:
@@ -39,15 +39,15 @@ def cband_scan(sigen, tunics, scope, config = True,
         scope.acquisition.time_per_record = 1.6*time_frame
         scope._write(":STOP")
         
-        tunics.power_on(power=5, lbd = lbd_ini)
-        tunics.sweep_config(lbd_ini, lbd_end, lbd_speed, sweep_max_cycles=1)
+        tunics.power.on(power=5, lbd = lbd_ini)
+        tunics.sweep.config(lbd_ini, lbd_end, lbd_speed, sweep_max_cycles=1)
     
     print("waiting for acquisition...")
       
     
-    tunics.sweep_start()
+    tunics.sweep.start()
     scope._write(":RUN")
-    tunics.sweep_wait(max_time = wait_tfs*time_frame)
+    tunics.sweep.wait(max_time = wait_tfs*time_frame)
     scope._write(":STOP")
     #time.sleep(0.5)
 
@@ -65,7 +65,7 @@ def cband_scan(sigen, tunics, scope, config = True,
     df['hcn'] = waveform4[1]
 
 
-    tunics.sweep_stop()
+    tunics.sweep.stop()
     #if config: tunics.power_off()
 
     return df
