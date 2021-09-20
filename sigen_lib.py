@@ -32,6 +32,10 @@ class Sigen:
         if high_impedance: self.output.high_impedance()
         if v_limits: self.output.v_limits()
 
+        #setting params
+        self.function = "None"
+        self.frequency = 0
+
 
     def __del__(self):
         self.output_off()
@@ -42,6 +46,9 @@ class Sigen:
 
     def write(self, msg):
         self.sigen.write(msg)
+
+    def query(self, msg):
+        return self.sigen.query(msg)
 
     class Output:
         def __init__(self, outer):
@@ -95,18 +102,27 @@ class Sigen:
                 str: expected output is "1\n" of "*OPC?" command
             """
             self._write('FUNCtion RAMP')
+            self.outer.function = 'ramp'
+
             if symmetry is not None:
                 if symmetry>=0 and symmetry<= 100:
                     self._write('FUNCtion:RAMP:SYMMetry {:.3f}'.format(symmetry))
                 else:
                     raise Exception("Symmetry value is out of bounds. It should be in the interval [0,100].")
 
-            if frequency is not None: self._write('FREQ {:.3f}'.format(frequency))
-            if amplitude is not None: self._write('VOLTage {:.3f}'.format(amplitude))
-            if offset is not None: self._write('VOLTage:OFFSet {:.3f}'.format(offset))
+            if frequency is not None: 
+                self._write('FREQ {:.3f}'.format(frequency))
+                self.outer.frequency = frequency
+
+            if amplitude is not None: 
+                self._write('VOLTage {:.3f}'.format(amplitude))
+
+            if offset is not None: 
+                self._write('VOLTage:OFFSet {:.3f}'.format(offset))
+
             return self._opc()
 
-        def sine(self, frequency, volt_high, volt_low, phase):
+        def sine(self, frequency = None, volt_high = None, volt_low = None, phase = None):
             """defines sinusoidal wave as output function
             Args:
                 frequency (float): WAVEFORM FREQUENCY
@@ -117,12 +133,27 @@ class Sigen:
             Returns:
                 str: expected output is "1" of "*OPC?" command
             """
+
             self._write("FUNCtion SIN")
-            self._write('FREQ {:.3f}'.format(frequency))
-            self._write("VOLTage:HIGH {:.3f}".format(volt_high))
-            self._write("VOLTage:LOW {:.3f}".format(volt_low))
-            self._write("PHASe {:.3f}".format(phase))
+            self.outer.function = 'sin'
+
+            if frequency is not None:
+                self._write('FREQ {:.3f}'.format(frequency))
+                self.outer.frequency = frequency
+
+            if volt_high is not None:  
+                self._write("VOLTage:HIGH {:.3f}".format(volt_high))
+
+            if volt_low is not None:  
+                self._write("VOLTage:LOW {:.3f}".format(volt_low))
+
+            if phase is not None:  
+                self._write("PHASe {:.3f}".format(phase))
+
             return self._opc()
+
+
+
         
 # %%
 if __name__=='__main__':
