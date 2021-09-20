@@ -14,6 +14,8 @@ def folder(my_folder):
     if not os.path.exists(my_folder):
         os.makedirs(my_folder)
 
+    return my_folder
+
 
 
 def scope_avg(scope, channels):    
