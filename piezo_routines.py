@@ -19,7 +19,7 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     if val_att_out is not None: att_out.set_att(val_att_out)
     if val_att_r is not None:att_r.set_att(val_att_r)
 
-    tunics.power.on(power=3, lbd=lbd_piezo)
+    tunics.power.on(pow_val=3, lbd=lbd_piezo)
 
     #sigen ramp
     sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
@@ -64,7 +64,7 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     
     return df_pol
 
-def start_scan( sigen, tunics, scope, sigen_freq,
+def start_scan( sigen, tunics, scope, sigen_freq = None,
     att_in= None, att_out= None, att_r= None,
     val_att_in = None, val_att_r = None, val_att_out=None):
 
@@ -84,7 +84,7 @@ def start_scan( sigen, tunics, scope, sigen_freq,
     scope._write(':TRIGger:EDGE:SOURce AUX')
     scope._write(":TRIGger:LEVel AUX, 1")
     scope._write(":TIMebase:ROLL:ENABLE OFF")
-    scope.acquisition.time_per_record =2.5/sigen_freq
+    scope.acquisition.time_per_record =2.5/sigen.frequency
 
 def end_scan(sigen, tunics, scope,
     ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
