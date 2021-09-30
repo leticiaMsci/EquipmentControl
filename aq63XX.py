@@ -324,14 +324,18 @@ class AQ63XX:
         return data_x, data_y
     
     def GetBinTrace(self):
-        if self.osaOK:
-            data_y = self.osa.query_binary_values("trac:data:y? " + self.trace, 
-                                            datatype='f', is_big_endian=False)
-            data_x = self.osa.query_binary_values("trac:data:x? " + self.trace, 
-                                            datatype='f', is_big_endian=False)
-            return data_x, data_y
-        else:
-            return None, None
+        counter = 0
+        while counter<100 and self.EndedSweep()==False:
+            time.sleep(.1)
+            #print("Waiting for Acquisition.")
+            counter = counter+1
+
+        data_y = self.osa.query_binary_values("trac:data:y? " + self.trace, 
+                                        datatype='f', is_big_endian=False)
+        data_x = self.osa.query_binary_values("trac:data:x? " + self.trace, 
+                                        datatype='f', is_big_endian=False)
+        return np.array(data_x), np.array(data_y)
+
     
     def GetASCIITrace(self):
         if self.osaOK:
