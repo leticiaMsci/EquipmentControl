@@ -103,7 +103,9 @@ class VOA:
         with nidaqmx.Task() as analog_output:
             analog_output.ao_channels.add_ao_voltage_chan(dev_id)
             analog_output.write(voltage)
-
+            
+    
+        
     def set_att(self, att_value):
         transmission = 10**(-att_value/10)
         voltage = self.inverse_function(transmission, *self.calib_param)
@@ -113,9 +115,6 @@ class VOA:
             voltage = self.max_voltage
 
         self.daq_write_voltage(voltage)
-
-
-
 
 
 
