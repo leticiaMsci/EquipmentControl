@@ -1,5 +1,6 @@
 #%%
 import visa
+import numpy as np
 
 
 ip = '143.106.72.137'
@@ -84,8 +85,6 @@ class N9030A:
                 self.outer.operation = "continuous"
 
             self._write("INIT")
-
-
         
 
     class RTSA:
