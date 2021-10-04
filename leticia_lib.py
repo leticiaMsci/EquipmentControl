@@ -3,6 +3,7 @@ import time
 import os
 import numpy as np
 from scipy import constants
+from scipy import interpolate
 from matplotlib import pyplot as plt
 import pyLPD.MLtools as mlt
 c = constants.c
@@ -62,21 +63,77 @@ def spectra_smooth(x, y, floor, fig_size=(5,3),
     
     return output
 
-def spectra_plot(dict_, fig_size=(5,3)):
+def spectra_plot(dict_, ax=None, fig_size=(5,3)):
     x = dict_['x']
     y = dict_['y']
     y_sg = dict_['y_sg']
     λ_peaks = dict_['λ_peaks']
     Ω = dict_['Ω']
     
-    f, ax = plt.subplots(figsize=fig_size)
+    #f, ax = plt.subplots(figsize=fig_size)
+    if ax is None:
+        ax = plt.gca()
+
     ax.plot(x, y, '.-', alpha = 0.5, c='r')
     ax.plot(x, y_sg, '-', linewidth = 2)       
     ax.axvline(λ_peaks[0], ls='--', c='k')
     
     for Ω_peak, x_peak in zip(Ω, λ_peaks[1:]):
-        plt.axvline(x_peak, c='k')
+        ax.axvline(x_peak, c='k')
         ax.annotate('{:.3f} GHz'.format(Ω_peak), (x_peak+0.01, -40), rotation=70)
+
+
+def spectra_cycle(osa_cycle, lbd_cycle, δ_lst, 
+        sg_w = 33, smooth_floor = -75,
+        peakdet_floor = -55, plot_bool = False):
+    
+    l=len(osa_cycle[0,:])
+    ii_lst = np.arange(l)
+    peak_lst=np.zeros(l)
+    ind_lst = np.zeros(l)
+    lbd_lst = np.zeros(l)
+
+    osa_smooth = np.zeros_like(osa_cycle)
+    for ii in ii_lst:
+        temp = osa_cycle[:, ii]
+        temp[temp<smooth_floor] = smooth_floor
+        temp = mlt.savitzky_golay(temp, window_size = sg_w, order = 2)
+        for jj in range(len(temp)):    
+            osa_smooth[jj, ii] = temp[jj]
+
+        osa_peakdet = osa_smooth[::, ii]
+        osa_peakdet[osa_peakdet<peakdet_floor] = peakdet_floor
+        ind_max, maxtab, ind_min, mintab=mlt.peakdet(osa_peakdet, 3)
+        lbd_lst[ii]=lbd_cycle[ind_max[0], ii]
+
+
+    poly = np.polyfit(ii_lst, lbd_lst, 1)
+    fit_y = poly[1]+ii_lst*poly[0]
+
+    if plot_bool:
+        plt.plot(lbd_lst, '.')
+        plt.plot(fit_y)
+        plt.show()
+
+
+    center_lst = np.zeros((len(δ_lst), l))
+    for ii in ii_lst:
+        δ=fit_y[ii]
+        interp=interpolate.interp1d(lbd_cycle[:, ii]-δ, osa_smooth[:, ii])
+        center_lst[:, ii] = interp(δ_lst)
+        
+    return center_lst, fit_y
+
+def spectra_shift(x, y, λ, δλ_lst, sg_w = 33,
+            smooth_bool = False, smooth_floor = -70):   
+    if smooth_bool:
+        y[y<smooth_floor] = smooth_floor
+        y = mlt.savitzky_golay(y, window_size = sg_w, order = 2)
+    
+    interp=interpolate.interp1d(x-λ, y)
+    y_centered = interp(δλ_lst)
+    
+    return y_centered
 
 
 
