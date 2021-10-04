@@ -74,6 +74,7 @@ class AQ63XX:
                 self.osa.query(self.passwd)
             if "AQ" in self.osa.query("*IDN?"):
                 self.osaOK = True
+                print("OSA connected. IDN: ", self.osa.query("*IDN?"))
             else:
                 print("Error opening OSA! Is it connected? A")
 #            except:
