@@ -62,6 +62,11 @@ def init_equip():
         'scope' : scope,
         'sigen' : sigen,
 
+        'scope_ch_r' : ch_reflection,
+        'scope_ch_t' : ch_transmission,
+        'scope_ch_mzi' : ch_mzi,
+        "scope_ch_hcn" : ch_hcn,
+
         'osa1' : osa1,
         'osa2' : osa2
     }
