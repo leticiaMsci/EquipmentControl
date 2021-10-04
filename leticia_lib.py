@@ -136,7 +136,78 @@ def spectra_shift(x, y, λ, δλ_lst, sg_w = 33,
     return y_centered
 
 
+def spectra_center(osa1_tab, lbd1_tab, osa2_tab, lbd2_tab, L_cycle, 
+                   δλ_0 =-0.09, δλ_f =0.3, len_δ_lst=100,
+                   sg_w = 15, peakdet_floor = -50, plot_bool = False):
+    
+    wavelength = np.zeros_like(osa2_tab[0, :])
+    centered2_tab = np.zeros((len_δ_lst, len(wavelength)))
+    centered1_tab = np.zeros((len_δ_lst, len(wavelength)))
 
+    δ_lst1 = np.linspace(δλ_0, δλ_f, len_δ_lst)
+    f_lst = c*δ_lst1/(1545)**2
+
+    hist ={
+        'λ':[],
+        'Ω':[],
+        'Δpow':[],
+        'centered1_scan':[],
+        'centered2_scan':[],
+        'wavelength_scan':[],
+    }
+
+    for n in range(int(len(wavelength)/L_cycle)):
+        osa2_cycle = osa2_tab[:, 1+L_cycle*n:1+L_cycle*(n+1)]
+        lbd2_cycle = lbd2_tab[:, 1+L_cycle*n:1+L_cycle*(n+1)]
+
+        osa1_cycle = osa1_tab[:, 1+L_cycle*n:1+L_cycle*(n+1)]
+        lbd1_cycle = lbd1_tab[:, 1+L_cycle*n:1+L_cycle*(n+1)]
+
+
+        if plot_bool:
+            fig, axs = plt.subplots(1,2, figsize=(12,5))
+            axs[0].imshow(osa2_cycle-np.min(osa2_cycle))
+            axs[1].plot(osa2_cycle[:,0], '.-', label = 'first of cycle')
+            axs[1].plot(osa2_cycle[:,-1], label='last of cycle')
+            try:
+                axs[1].plot(osa2_tab[:,1+L_cycle*(n+1)], label='first of following cycle')
+            except IndexError:
+                pass
+            plt.legend()
+            plt.show()
+
+        l=len(osa2_cycle[0,:])
+
+        center_lst, λ_center_lst = spectra_cycle(osa2_cycle, lbd2_cycle, δ_lst1, sg_w =sg_w, peakdet_floor = peakdet_floor)
+
+        for kk, λ in enumerate(λ_center_lst):
+            x1 = lbd1_cycle[:, kk]
+            y1 = osa1_cycle[:, kk]
+            output = spectra_smooth(x1,y1, -65, sg_wind = 25)
+
+            if len(output['λ_peaks'])>1:
+                f, ax1 = plt.subplots(1, figsize=(6,3))
+                spectra_plot(output, ax=ax1)
+                plt.plot(lbd2_cycle[:, kk], osa2_cycle[:, kk])
+                plt.xlim(λ+δλ_0, λ+δλ_f)
+                plt.show()
+
+            for ll, Ω in enumerate(output['Ω']):
+                hist['λ'].append(λ)
+                hist['Ω'].append(Ω)
+                hist['Δpow'].append(output['pow_peaks'][ll+1]-output['pow_peaks'][ll])
+
+            centered1_tab[:, 1+L_cycle*n+kk] = spectra_shift(output['x'], output['y_sg'], λ, δ_lst1, smooth_bool = False)
+
+
+        L = len(λ_center_lst)
+        centered2_tab[:, 1+L_cycle*n: 1+L_cycle*n + L] = center_lst
+        wavelength[1+L_cycle*n: L+1+L_cycle*n] = λ_center_lst
+        
+    hist['wavelength_scan'] = wavelength
+    hist['centered2_scan'] = centered2_tab
+    hist['centered1_scan'] = centered1_tab
+    return hist
 
 
 if __name__=='__main__':
