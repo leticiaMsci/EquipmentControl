@@ -41,25 +41,22 @@ class T100R:
         #Setting wavelength mode
     
     def connect(self):
-        print('Initializing Tunics', end="")
+        #print('Initializing Tunics', end="")
         #opening connection
         try:
             self.tunics =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print(".",  end="")
         except OSError as msg:
             self.tunics = None
-            raise Exception('Could not open socket.')
+            raise Exception('Tunics T100R: Could not open socket.')
 
         self.tunics.connect((self.ip_addr, 50000))
-        print(".",  end="")
         try:
             self.tunics.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            print(".",  end="")
         except:
-            print('Error setting socket options')
+            print('Tunics T100R:Error setting socket options')
             
         self.query('SOURce:WAVelength:MODE '+ wavelength_mode)
-        print("Tunics was successfully initialized.")
+        print("Tunics connected. IDN: ", self.query("*IDN?"))
         
 
     def read(self, input_buffer = 2**33):
@@ -88,8 +85,8 @@ class T100R:
         Returns:
             [type]: [description]
         """
-        self.send('*OPC?')
-        self.read(input_buffer=input_buffer)
+        #self.send('*OPC?')
+        #self.read(input_buffer=input_buffer)
 
         self.send(msg)
         return self.read(input_buffer=input_buffer)
@@ -279,6 +276,9 @@ if __name__ == '__main__':
     tunics.power.on(pow_val=1)
     
     print(tunics.query('SOURce:WAVelength:SWEep:STEP:WIDTh?'))
+
+    for ii in range(100):
+        tunics.wavelength.step_next()
 
     #tunics.power.off()
 
