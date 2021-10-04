@@ -64,7 +64,7 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     
     return df_pol
 
-def start_scan( sigen, tunics, scope, sigen_freq = None,
+def start_scan( sigen, tunics, scope,
     att_in= None, att_out= None, att_r= None,
     val_att_in = None, val_att_r = None, val_att_out=None):
 
@@ -75,7 +75,7 @@ def start_scan( sigen, tunics, scope, sigen_freq = None,
     if val_att_r is not None and att_r is not None:
         att_r.set_att(val_att_r)
 
-    tunics.power.on()
+    #tunics.power.on()
     sigen.output.on()
 
     #oscilloscope trigger on aux port
@@ -113,9 +113,9 @@ def end_scan(sigen, tunics, scope,
     return df_pol
 
 
-def wavelength_search(sigen, tunics, scope, sigen_freq):
+def wavelength_search(sigen, tunics, scope):
 
-    start_scan(sigen, tunics, scope, sigen_freq)
+    start_scan(sigen, tunics, scope)
     
     lbd = tunics.wavelength.search()
 
