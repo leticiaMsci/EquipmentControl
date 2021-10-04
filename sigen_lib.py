@@ -20,7 +20,7 @@ class Sigen:
         self.rm = visa.ResourceManager()
         try:
             self.sigen = self.rm.open_resource(_sigen_id, read_termination="\n")
-            print("Sigen IDN: "+self.sigen.query("*IDN?"))
+            print("Sigen connected. IDN: "+self.sigen.query("*IDN?"))
         except:
             raise Exception("Could not open signal generator "+_sigen_id)
         
