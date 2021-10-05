@@ -1,11 +1,12 @@
 #%%
 import visa
 import numpy as np
-
+_delta_dB = 18.33
 class PM200:
-    def __init__(self, resource_id):
+    def __init__(self, resource_id, delta_dB = _delta_dB):
         self.rm = visa.ResourceManager()
         self.pm = self.connection(resource_id)
+        self.delta_dB = delta_dB
 
     def connection(self, resource_id):
         '''
@@ -39,17 +40,14 @@ class PM200:
         self.pm.write(msg)
         self.pm.close()
 
-    def meas_pow(self, unit = 'mW'):
+    def pow_dBm(self, delta_input = False):
         pow_str = self.query('MEAS:POW?')
+        pow_float = 10*np.log10(float(pow_str)*1e3)
 
-        if unit.upper() =='MW':
-            pow_float = float(pow_str)*1e3
-        elif unit.upper() == 'DBM':
-            pow_float = 10*np.log10(float(pow_str)*1e3)
+        if delta_input:
+            return pow_float+self.delta_dB
         else:
-            pow_float = float(pow_str)
-
-        return pow_float
+            return pow_float
 
     
 
