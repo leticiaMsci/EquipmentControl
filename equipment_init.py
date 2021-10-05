@@ -4,7 +4,7 @@ import sys
 equip_control_path = 'C:/Users/lpd/Documents/Leticia/DFS/EquipmentControl'
 sys.path.insert(1, equip_control_path)
 
-import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib
+import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib
 import piezo_routines as piezo
 import VOA.VOA_lib as VOA_lib
 import leticia_lib as llb
@@ -19,12 +19,16 @@ scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
 osa1_id = 'nano-osa-aq6370c.ifi.unicamp.br'
 osa2_id = '143.106.72.222'
 VOA_calib_path = 'VOA\calib_U00306.json'
+pm_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
 
 #scope channels
 ch_reflection = 0
 ch_transmission = 1
 ch_mzi = 2
 ch_hcn=3
+
+#other details
+pm_delta_dB = 18.33
 
 def init_equip():
     #attenuators
@@ -49,6 +53,8 @@ def init_equip():
     osa2.osa.write('AUTO OFFSET OFF')
     osa2.InitOSA(print_bool=False)
 
+    pm = thorlabs_pm_lib.PM200(pm_id)
+
 
     print("All Equipment Initialized Successfully")
 
@@ -68,7 +74,9 @@ def init_equip():
         "scope_ch_hcn" : ch_hcn,
 
         'osa1' : osa1,
-        'osa2' : osa2
+        'osa2' : osa2,
+
+        'pm':pm
     }
 
     return equip
