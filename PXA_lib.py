@@ -13,7 +13,8 @@ class N9030A:
         self.operation = ""
 
         self.connect(ip=ip_addr)
-        self.spec_analyzer = self.SA(self)
+        self.sa = self.SA(self)
+        self.rt = self.RTSA(self)
 
     def connect(self, ip = ip):
         visa_id = "TCPIP::"+ip+"::INSTR"
@@ -43,6 +44,21 @@ class N9030A:
         else:
             raise Exception("Measurement MODE is not supported. You should implement it.")
 
+    def single(self):
+        if self.operation != "single":
+            self.write(":INITiate:CONTinuous 0")
+            self.operation = "single"
+
+        self.write("INIT")
+        self.write("*WAI")
+
+    def continuous(self):
+        if self.operation != "continuous":
+            self.write(":INITiate:CONTinuous 1")
+            self.operation = "continuous"
+
+        self.write("INIT")
+
     class SA:
         def __init__(self, outer):
             self.outer = outer
@@ -71,34 +87,32 @@ class N9030A:
             if bw is not None:
                 self._write("SENSe:BANDwidth:RESolution {:.6f} ".format(bw)+bw_unit)
 
-        def single(self):
-            if self.outer.operation != "single":
-                self._write(":INITiate:CONTinuous 0")
-                self.outer.operation = "single"
-
-            self._write("INIT")
-            self._write("*WAI")
-
-        def continuous(self):
-            if self.outer.operation != "continuous":
-                self._write(":INITiate:CONTinuous 1")
-                self.outer.operation = "continuous"
-
-            self._write("INIT")
-        
-
     class RTSA:
         def __init__(self, outer):
             self.outer = outer
+            if self.outer.mode !="RTSA":
+                self._write(":INSTrument RTSA")
+                self.outer.mode  = "RTSA"
+
+            self.step = None
 
         def _write(self, msg):
             self.outer.write(msg)
 
-        def config(self):
-            self._write("INST:SEL RTSA")
+        def fcenter(self, freq, freq_unit = 'GHz'):
+            self._write("FREQ:CENT {:.3f}".format(freq)+freq_unit)
+
+        def fstep(self, step, step_unit = 'MHz'):
+            if self.step != str(step) + step_unit:
+                self._write("FREQ:CENT:STEP {:.3f}".format(step)+step_unit)
+                self.step = str(step) + step_unit
+                print("Step")
+
+            self._write("FREQ:CENT UP")
+
+
+        
     
-
-
 #%%
 if __name__=='__main__':
     import numpy as np
@@ -107,17 +121,22 @@ if __name__=='__main__':
 
     pxa = N9030A()
 
-    pxa.spec_analyzer.fspan(bw=300)
-    pxa.spec_analyzer.continuous()
+#    pxa.sa.fspan(bw=300)
+#    pxa.sa.continuous()
+#    pxa.sa.fspan(start_freq=6, stop_freq=7)
+    pxa.rt.fcenter(6)
+    #pxa.continuous()
+    for ii in range(3):
+        pxa.single()
+        x,y = pxa.trace()
+        plt.plot(x, y+5*ii)
 
-    pxa.spec_analyzer.fspan(start_freq=6, stop_freq=7)
+        pxa.rt.fstep(100)
 
-    for ii in range(2):
-        t0 = time.time()
-        pxa.spec_analyzer.single()
-        x, y = pxa.trace()
-        print("--------time:", time.time()-t0, "s--------")
-        plt.plot(x,y+25*ii)
     plt.show()
+
+
+    
+
 
 # %%
