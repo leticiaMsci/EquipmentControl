@@ -11,8 +11,8 @@ import leticia_lib as llb
 
 #equipment id
 daq_port = 'Dev1/ao1'
-att_in_id = 'ASRL5::INSTR'
-att_r_id = 'ASRL13::INSTR'
+att_in_id = 'ASRL13::INSTR'
+att_r_id = 'ASRL8::INSTR'
 tunics_ip = 'yetula.ifi.unicamp.br'
 sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
 scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
