@@ -5,8 +5,10 @@ import numpy as np
 from scipy import constants
 from scipy import interpolate
 from matplotlib import pyplot as plt
+from matplotlib import ticker
 import pyLPD.MLtools as mlt
 c = constants.c
+osa2_delta = 0.428
 
 def time_stamp(precision_minute = True, precision_second = True):
     if not precision_minute:
@@ -39,7 +41,7 @@ def balanced_att(val_total, val_in, lst_att_in, lst_att_out):
 sg_wind = 19
 sg_o = 2
 pkdet = 3
-def spectra_smooth(x, y, floor, fig_size=(5,3), 
+def spectra_smooth(x, y, floor, λ_ref = None, fig_size=(5,3), 
                     sg_wind = sg_wind, sg_o = sg_o, pkdet = pkdet):
 
     y[y<floor] = floor
@@ -48,8 +50,18 @@ def spectra_smooth(x, y, floor, fig_size=(5,3),
     ind_max, maxtab, ind_min, mintab=mlt.peakdet(y_sg, pkdet)
 
     Ω = []
+    λ_peaks=[]
+    λ_in = x[ind_max][0]
     if len(ind_max)>1:
-        Ω = c*np.diff(x[ind_max])/(x[ind_max[0]])**2
+        if λ_ref is None:
+            Ω = c*np.diff(x[ind_max])/(x[ind_max[0]])**2
+        else:
+            Ω=c*(x[ind_max] - λ_ref)/(x[ind_max[0]])**2
+            sortΩ = np.argsort(np.abs(Ω))
+            Ω=Ω[sortΩ[1:]]
+            λ_peaks = x[ind_max][sortΩ[1:]]
+            λ_in = x[ind_max][sortΩ[0]]
+                
         
 
     output = {
@@ -57,7 +69,8 @@ def spectra_smooth(x, y, floor, fig_size=(5,3),
         'y':y,
         'y_sg':y_sg,
         'Ω':Ω,
-        'λ_peaks':x[ind_max],
+        'λ_peaks':λ_peaks,
+        'λ_in' : λ_in,
         'pow_peaks':maxtab,
     }
     
@@ -69,6 +82,7 @@ def spectra_plot(dict_, ax=None, fig_size=(5,3)):
     y_sg = dict_['y_sg']
     λ_peaks = dict_['λ_peaks']
     Ω = dict_['Ω']
+    λ_in = dict_['λ_in']
     
     #f, ax = plt.subplots(figsize=fig_size)
     if ax is None:
@@ -76,9 +90,9 @@ def spectra_plot(dict_, ax=None, fig_size=(5,3)):
 
     ax.plot(x, y, '.-', alpha = 0.5, c='r')
     ax.plot(x, y_sg, '-', linewidth = 2)       
-    ax.axvline(λ_peaks[0], ls='--', c='k')
+    ax.axvline(λ_in, ls='--', c='k')
     
-    for Ω_peak, x_peak in zip(Ω, λ_peaks[1:]):
+    for Ω_peak, x_peak in zip(Ω, λ_peaks):
         ax.axvline(x_peak, c='k')
         ax.annotate('{:.3f} GHz'.format(Ω_peak), (x_peak+0.01, -40), rotation=70)
 
@@ -114,6 +128,7 @@ def spectra_cycle(osa_cycle, lbd_cycle, δ_lst,
         plt.plot(lbd_lst, '.')
         plt.plot(fit_y)
         plt.show()
+
 
 
     center_lst = np.zeros((len(δ_lst), l))
@@ -178,7 +193,7 @@ def spectra_center(osa1_tab, lbd1_tab, osa2_tab, lbd2_tab, L_cycle,
 
         l=len(osa2_cycle[0,:])
 
-        center_lst, λ_center_lst = spectra_cycle(osa2_cycle, lbd2_cycle, δ_lst1, sg_w =sg_w, peakdet_floor = peakdet_floor)
+        center_lst, λ_center_lst = spectra_cycle(osa2_cycle, lbd2_cycle, δ_lst1, sg_w =sg_w, peakdet_floor = peakdet_floor, plot_bool=plot_bool)
 
         for kk, λ in enumerate(λ_center_lst):
             x1 = lbd1_cycle[:, kk]
@@ -207,29 +222,87 @@ def spectra_center(osa1_tab, lbd1_tab, osa2_tab, lbd2_tab, L_cycle,
     hist['wavelength_scan'] = wavelength
     hist['centered2_scan'] = centered2_tab
     hist['centered1_scan'] = centered1_tab
+    hist['f_lst'] = f_lst
     return hist
+
+
+def spectra_histogram(hist, title = None):
+    fig, (ax1,ax2)=plt.subplots(1, 2, figsize=(13,3.5), sharey=True, sharex='col')
+
+    if title is not None:
+        fig.suptitle(title)
+
+    map1=ax1.scatter(hist['λ'], hist['Ω'], marker='h', c=np.array(hist['Δpow']), s=65, alpha=0.8, cmap='Blues')
+    ax1.set_ylabel('Frequency Shift [GHz]')
+    ax1.set_xlabel('Input Wavelength [nm]')
+    ax1.yaxis.tick_left()
+    ax1.set_title('Frequency Shifts for Pump Wavelengths')
+    ax1.set_ylim(1, 20)
+
+
+    counts, bins, patches=ax2.hist(hist['Ω'], orientation=u'horizontal', log=True, alpha=0.9)
+    bin_centers =  bins[:-1] - 0.5 * np.diff(bins)
+    ax2.set_xlabel('Occurence')
+    ax2.set_xlim(0.5, max(counts)*3)
+    ax2.tick_params(axis='y', which='both', labelleft=False, labelright=True)
+    ax2.yaxis.tick_right()
+    ax2.set_title('Frequency Shift Histogram')
+
+
+    for count, x in zip(counts, bin_centers):
+        if count >0.01*len(hist['λ']):
+            plt.annotate('{:.1f}%'.format(100*count/sum(counts)), xy=( count, x), xycoords=('data', 'data'),
+                xytext=(0, 18), textcoords='offset points', va='top', ha='left')
+    # 
+    #fig.colorbar(map1, ax=ax2)
+
+    cbar= fig.add_axes([0.45, 0.56, 0.01, 0.3])
+
+    cb=fig.colorbar(map1, cax=cbar)
+    tick_locator = ticker.MaxNLocator(nbins=4)
+    cb.locator = tick_locator
+    cb.update_ticks()
+    # cb.set_label('Fraction of Power')
+    ax = cb.ax
+    ax.text(-1.52,0.8,r'$P_1-P_0$ [dB]',rotation=90)
+    #ax.set_title(r'$P_1-P_0$ [dB]')
+    plt.subplots_adjust(wspace=.02, hspace=0)
+    return fig
 
 
 if __name__=='__main__':
     import pandas as pd
 
     print(time_stamp())
-    f_osa = "C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-09-13_PiezoScan\\2021-09-13-20_OpticalTransmission_BareSphere-267umDiameter_OSA_steps-Pol1_lbd1550\\2021-09-13-22-15-08_Att_in5_OSA_scan_osa_table.csv"
-    f_lbd = 'C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-09-13_PiezoScan\\2021-09-13-20_OpticalTransmission_BareSphere-267umDiameter_OSA_steps-Pol1_lbd1550\\2021-09-13-22-15-12_Att_in5_OSA_scan_lbd_table.csv'
-    
-    osa_tab = pd.read_csv(f_osa).values[:,1:]
-    lbd_tab = 1e9*pd.read_csv(f_lbd).values[:,1:]
+    f_osa1 = "C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-10-04\\2021-10-05-11_OpticalTransmission_BareSphere-267umDiameter_PiezoPowerScan-Pol1_lbd1550\\2021-10-05-12-31-11_Power7.37_OSA_scan_osa1_table.csv"
+    f_lbd1 = "C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-10-04\\2021-10-05-11_OpticalTransmission_BareSphere-267umDiameter_PiezoPowerScan-Pol1_lbd1550\\2021-10-05-12-31-11_Power7.37_OSA_scan_lbd1_table.csv"
 
-    for ii in range(5):
-        x = lbd_tab[:, ii]
-        y = osa_tab[:, ii]
+    f_osa2 = "C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-10-04\\2021-10-05-11_OpticalTransmission_BareSphere-267umDiameter_PiezoPowerScan-Pol1_lbd1550\\2021-10-05-12-31-12_Power7.37_OSA_scan_osa2_table.csv"
+    f_lbd2 = "C:\\Users\\lpd\\Documents\\Leticia\\DFS\\2021-10-04\\2021-10-05-11_OpticalTransmission_BareSphere-267umDiameter_PiezoPowerScan-Pol1_lbd1550\\2021-10-05-12-31-12_Power7.37_OSA_scan_lbd2_table.csv"
+      
+    osa1_tab = pd.read_csv(f_osa1).values[:,1:]
+    lbd1_tab = 1e9*pd.read_csv(f_lbd1).values[:,1:]
+
+    osa2_tab = pd.read_csv(f_osa2).values[:,1:]
+    lbd2_tab = 1e9*pd.read_csv(f_lbd2).values[:,1:]+osa2_delta
+
+    for ii in range(len(osa1_tab[0, :])):
+        x = lbd1_tab[:, ii]
+        y = osa1_tab[:, ii]
 
         t0 =time.time()
         out = spectra_smooth(x,y, floor = -65)
-        print("smooth time: ", time.time()-t0)
+        #print("smooth time: ", time.time()-t0)
         if len(out['λ_peaks'])>1:
             ax = spectra_plot(out)
             plt.show()
+
+    hist = spectra_center(osa1_tab, lbd1_tab, osa2_tab, lbd2_tab,
+                            L_cycle = 50, δλ_0 =-0.09, δλ_f =0.3, len_δ_lst=100,
+                            sg_w = 15, peakdet_floor = -50, plot_bool = False)
+
+    fig = spectra_histogram(hist)
+    plt.show()
 
 
 # %%
