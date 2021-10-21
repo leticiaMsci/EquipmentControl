@@ -19,6 +19,7 @@ class N9030A:
     def connect(self, ip = ip):
         visa_id = "TCPIP::"+ip+"::INSTR"
         self.pxa = self.rm.open_resource(visa_id)
+        self.pxa.read_termination = '\n'
 
         print("Connecting PXA. IDN:", self.query("*IDN?"))
 
@@ -109,6 +110,11 @@ class N9030A:
                 print("Step")
 
             self._write("FREQ:CENT UP")
+
+
+        #def stitching(self, freq0, freqf, unit = 'GHz'):
+
+
 
 
         
