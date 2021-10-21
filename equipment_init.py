@@ -4,7 +4,7 @@ import sys
 equip_control_path = 'C:/Users/lpd/Documents/Leticia/DFS/EquipmentControl'
 sys.path.insert(1, equip_control_path)
 
-import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib
+import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib, EDFA_lib
 import piezo_routines as piezo
 import VOA.VOA_lib as VOA_lib
 import leticia_lib as llb
@@ -20,6 +20,7 @@ osa1_id = 'nano-osa-aq6370c.ifi.unicamp.br'
 osa2_id = '143.106.72.222'
 VOA_calib_path = 'VOA\calib_U00306.json'
 pm_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
+edfa_gpib_port = 3
 
 #scope channels
 ch_reflection = 0
@@ -55,6 +56,8 @@ def init_equip():
 
     pm = thorlabs_pm_lib.PM200(pm_id)
 
+    edfa = EDFA_lib.KeopsysEDFA(gpib_port=edfa_gpib_port)
+
 
     print("All Equipment Initialized Successfully")
 
@@ -76,7 +79,8 @@ def init_equip():
         'osa1' : osa1,
         'osa2' : osa2,
 
-        'pm':pm
+        'pm':pm,
+        'edfa':edfa
     }
 
     return equip
