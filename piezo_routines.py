@@ -87,18 +87,20 @@ def start_scan( sigen, tunics, scope,
     scope.acquisition.time_per_record =2.5/sigen.frequency
 
 def end_scan(sigen, tunics, scope,
-    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3):
+    ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3,
+    plot_bool = True):
 
     transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
     reflec = np.array(scope.channels[ch_reflection].measurement.fetch_waveform())
     mzi = np.array(scope.channels[ch_mzi].measurement.fetch_waveform())
     hcn = np.array(scope.channels[ch_hcn].measurement.fetch_waveform())
     
-    plt.plot(mzi[0, ::100], mzi[1, ::100])
-    plt.plot(hcn[0, ::100], hcn[1, ::100])
-    plt.plot(transmission[0, ::100], transmission[1, ::100])
-    plt.plot(reflec[0, ::100], reflec[1, ::100])
-    plt.show()
+    if plot_bool:
+        plt.plot(mzi[0, ::100], mzi[1, ::100])
+        plt.plot(hcn[0, ::100], hcn[1, ::100])
+        plt.plot(transmission[0, ::100], transmission[1, ::100])
+        plt.plot(reflec[0, ::100], reflec[1, ::100])
+        plt.show()
     
     df_pol = pd.DataFrame()
     df_pol['time'] = transmission[0]
@@ -123,6 +125,32 @@ def wavelength_search(sigen, tunics, scope):
 
     return lbd
 
+def _flatten(a):
+    return np.array([item for sublist in a for item in sublist])
+
+def pxa_stitching(sigen, tunics, scope, pxa, freqlst, nwait = 5, acqtime = 0.03):
+    pxa.rt.config()
+    pxa.continuous()
+    pxa.write(":TRAC:TYPE MAXH")
+
+    xlist=[]
+    ylist=[]
+    start_scan(sigen, tunics, scope)
+    for freq in freqlst:
+        pxa.rt.fcenter(freq)
+        time.sleep(nwait/sigen.frequency+acqtime)
+        x,y = pxa.trace()
+        xlist.append(x)
+        ylist.append(y)
+    df = end_scan(sigen, tunics, scope, plot_bool = False)
+
+    xflat =_flatten(xlist)
+    yflat =  _flatten(ylist)
+    idx = np.argsort(xflat)
+
+    return xflat[idx], yflat[idx], df
+
+    
 if __name__=='__main__':
     daq_port = 'Dev1/ao1'
     att_in_id = 'ASRL5::INSTR'
