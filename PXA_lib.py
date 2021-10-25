@@ -19,7 +19,7 @@ class N9030A:
     def connect(self, ip = ip):
         visa_id = "TCPIP::"+ip+"::INSTR"
         self.pxa = self.rm.open_resource(visa_id)
-        self.pxa.read_termination = '\n'
+        #self.pxa.read_termination = '\n'
 
         print("Connecting PXA. IDN:", self.query("*IDN?"))
 
@@ -31,9 +31,11 @@ class N9030A:
 
     def trace(self):
         if self.mode == "SA" or self.mode == "RTSA":
-            self.write(':MMEM:STOR:TRAC:DATA TRACE1, "D:\\buffer.csv"')
-            data = self.query(':MMEM:DATA?  "D:\\buffer.csv"')
-            self.write(':MMEM:DEL? "D:\\buffer.csv"')
+            self.write(':MMEM:STOR:TRAC:DATA TRACE1, "D:\\new.csv"')
+            
+            data = self.query(':MMEM:DATA?  "D:\\new.csv"')
+            
+            self.write(':MMEM:DEL? "D:\\new.csv"')
 
             num_data = data.split("\r\n")[89:]
 
@@ -64,7 +66,7 @@ class N9030A:
         def __init__(self, outer):
             self.outer = outer
             if self.outer.mode !="SA":
-                self._write(":INSTrument SA")
+                self.config()
                 self.outer.mode  = "SA"
         
         def _write(self, msg):
@@ -72,6 +74,9 @@ class N9030A:
 
         def _query(self, msg):
             self.outer.query(msg)
+
+        def config(self):
+            self._write(":INSTrument SA")
 
         def fspan(self, start_freq = None, stop_freq = None, freq_unit = "GHz",
                     bw = None, bw_unit = "KHZ"):
@@ -88,17 +93,23 @@ class N9030A:
             if bw is not None:
                 self._write("SENSe:BANDwidth:RESolution {:.6f} ".format(bw)+bw_unit)
 
+        def max_hold(self, trace=1):
+            self._write("TRAC"+str(trace)+":TYPE MAXH")
+
     class RTSA:
         def __init__(self, outer):
             self.outer = outer
             if self.outer.mode !="RTSA":
-                self._write(":INSTrument RTSA")
+                self.config()
                 self.outer.mode  = "RTSA"
 
             self.step = None
 
         def _write(self, msg):
             self.outer.write(msg)
+        
+        def config(self):
+            self._write(":INSTrument RTSA")
 
         def fcenter(self, freq, freq_unit = 'GHz'):
             self._write("FREQ:CENT {:.3f}".format(freq)+freq_unit)
@@ -127,10 +138,10 @@ if __name__=='__main__':
 
     pxa = N9030A()
 
-#    pxa.sa.fspan(bw=300)
-#    pxa.sa.continuous()
-#    pxa.sa.fspan(start_freq=6, stop_freq=7)
-    pxa.rt.fcenter(6)
+    pxa.sa.fspan(bw=300)
+    pxa.continuous()
+    pxa.sa.fspan(start_freq=6, stop_freq=7)
+    #pxa.rt.fcenter(6)
     #pxa.continuous()
     for ii in range(3):
         pxa.single()
