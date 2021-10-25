@@ -1,6 +1,8 @@
 import time
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import pyLPD.MLtools as mlt
 
 def cband_scan(sigen, tunics, scope, config = True,
     lbd_ini = 1529, lbd_end = 1565, lbd_speed = 5,
@@ -31,7 +33,7 @@ def cband_scan(sigen, tunics, scope, config = True,
     time_frame = (lbd_end-lbd_ini)/lbd_speed
 
     sigen.output.off()
-    time.sleep(.1)
+    time.sleep(.2)
 
     if config:
         scope._write(":ACQuire:POINts 10000000")
@@ -39,7 +41,7 @@ def cband_scan(sigen, tunics, scope, config = True,
         scope.acquisition.time_per_record = 1.6*time_frame
         scope._write(":STOP")
         
-        tunics.power.on(power=5, lbd = lbd_ini)
+        tunics.power.on(pow_val=3, lbd = lbd_ini)
         tunics.sweep.config(lbd_ini, lbd_end, lbd_speed, sweep_max_cycles=1)
     
     print("waiting for acquisition...")
@@ -69,3 +71,22 @@ def cband_scan(sigen, tunics, scope, config = True,
     #if config: tunics.power_off()
 
     return df
+
+def plot_diff_freq(data, fname, pkdet_delta=0.25):
+    ind_max, maxtab, ind_min, mintab = mlt.peakdet(data.cav.values, delta=pkdet_delta)
+    fΩ = data.freq.values[ind_min][:-1]
+    Ω =  np.diff(data.freq.values[ind_min])*1e3
+    mask = Ω<15
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+    ax1.plot(data.freq.values[::10], data.cav.values[::10])
+    ax1.set_xlabel("Frequency [THz]")
+    ax1.set_ylabel("T [a.u.]")
+    ax1.set_title("Transmission")
+
+    ax2.hist(Ω[mask], bins = np.linspace(0, 12, 50))
+    ax2.set_xlabel(r"f$_{n+1}$ - f$_n$")
+    ax2.set_ylabel("Occurence")
+    ax2.set_title("Delta Frequency Histogram")
+    ax2.set_yscale('log')
+    plt.savefig(fname[:-5]+"DeltaFrequencyHistogram.pdf")
+    plt.show()
