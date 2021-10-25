@@ -7,7 +7,7 @@ class KeopsysEDFA:
     def __init__(self, gpib_port):
         self.rm = visa.ResourceManager()
         self.instr_id = 'GPIB0::'+str(gpib_port)+'::INSTR'
-        self.edfa = rm.open_resource(self.instr_id)
+        self.edfa = self.rm.open_resource(self.instr_id)
         self.edfa.read_termination = '\x00'
         
         idn = self.query("*IDN?")
