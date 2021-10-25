@@ -456,6 +456,65 @@ def optimize_reference(data, ind_min_hcn, mintab_hcn,
             return data_i
     raise CalibrationUnsuccessful(err_tshd)
 
+def test_optimize(data, ind_min_hcn, mintab_hcn, 
+                       ind_peaks_mzi, nist, save_bool, base_name,
+                       err_tshd = None):
+    """Chooses the middle hcn data peak and scans the reference wavelength to find the one that
+    minimizes the error for the other hcn peaks.
+
+    Args:
+        data (dataframe): data.
+        ind_min_hcn (int array): indexes in data of hcn peaks.
+        mintab_hcn (float array): y values of hcn peaks
+        ind_peaks_mzi (int array): indexes (in data) of mzi peaks.
+        nist (dataframe): table of reference wavelengths
+        save_bool (bool): If true will save pdf of calibration plot in path 'base_name'
+        base_name (str, optional): Path and root name of output pdf file. Defaults to "./".
+
+    Raises:
+        CalibrationUnsuccessful: if none of the lbd_guess in lbd_ref engender a calibration 
+        error of other peaks within err_tshd
+
+    Returns:
+        dataframe: calibrated data.
+    """
+    #setting default values if not given
+    if err_tshd is None: err_tshd = param['err_tshd']
+    
+    #actual function
+    c = constants.c
+
+    peak_guess = len(ind_min_hcn)//2
+    lbd_ref = np.array(list(chain(*zip(nist['R-wavelength(nm)'].values[::-1], nist['P-wavelength(nm)'].values[:-1]))))
+    err_lst = np.zeros_like(lbd_ref)
+    print("Optimizing reference wavelength:")
+    for jj, lbd_guess in enumerate(lbd_ref[:]):
+        data_i = calibration(data, lbd_guess,  peak_guess, ind_min_hcn, ind_peaks_mzi)
+        meas_freq = data_i.freq.values[ind_min_hcn]
+        error_tab = []
+        
+        error_tab = [min(np.abs(f - 1e-3*c/lbd_ref)) for f in meas_freq]
+        max_error = max(error_tab)
+
+        print_ = 'λ0 = {:8.5f} nm, ν0 = {:.5f} THz Max error = {:.3f} THz'.format(lbd_guess, 1e-3*c/lbd_guess, max_error)
+        sys.stdout.write('\r'+print_)
+        sys.stdout.flush()
+        
+        err_lst[jj] = max_error
+        #if max_error<err_tshd:      
+        #    plot_calibration(data_i, ind_min_hcn, mintab_hcn, nist, save_bool = save_bool, base_name = base_name)
+        #    return data_i
+    
+    jj_min = np.argmin(err_lst)
+    error = err_lst[jj_min]
+    lbd_guess = lbd_ref[jj_min]
+    print("\n Error:{:.3f}".format(error))
+    data_i = calibration(data, lbd_guess,  peak_guess, ind_min_hcn, ind_peaks_mzi)
+    plot_calibration(data_i, ind_min_hcn, mintab_hcn, nist, save_bool = save_bool, base_name = base_name)
+    return data_i
+
+    #raise CalibrationUnsuccessful(err_tshd)
+
 def auto_calibrate(data_in, base_name, nist_path = None, forward_lbd_scan = True):
     if nist_path is None: nist_path = param['nist_path']
     nist = load_nist(nist_path)
