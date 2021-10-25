@@ -10,6 +10,9 @@ import pyLPD.MLtools as mlt
 c = constants.c
 osa2_delta = 0.428
 
+def flatten(a):
+    return [item for sublist in a for item in sublist]
+    
 def time_stamp(precision_minute = True, precision_second = True):
     if not precision_minute:
         return time.strftime("%Y-%m-%d_%H")
