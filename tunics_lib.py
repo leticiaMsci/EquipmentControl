@@ -155,7 +155,9 @@ class T100R:
             self.outer.send(msg)
         
         def set_lbd(self, lbd_nm, lbd_unit = 'NM'):
-            return self._query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
+            output = self._query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
+            self._query("*OPC?")
+            return output
 
         def set_step(self, step, step_unit = "NM"):
             return self._query('SOURce:WAVelength:SWEep:STEP:WIDTh {:.3f} '.format(step) + step_unit)
