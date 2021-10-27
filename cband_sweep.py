@@ -78,15 +78,18 @@ def plot_diff_freq(data, fname, pkdet_delta=0.25):
     Ω =  np.diff(data.freq.values[ind_min])*1e3
     mask = Ω<15
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
-    ax1.plot(data.freq.values[::10], data.cav.values[::10])
+    ax1.plot(data.freq.values[::10], data.cav.values[::10]/max(data.cav.values))
+    ax1.plot(data.freq.values[::10], data.reflec.values[::10]/max(1, max(data.reflec.values)))
     ax1.set_xlabel("Frequency [THz]")
     ax1.set_ylabel("T [a.u.]")
     ax1.set_title("Transmission")
 
     ax2.hist(Ω[mask], bins = np.linspace(0, 12, 50))
-    ax2.set_xlabel(r"f$_{n+1}$ - f$_n$")
+    ax2.set_xlabel(r"f$_{n+1}$ - f$_n$ [GHz]")
     ax2.set_ylabel("Occurence")
     ax2.set_title("Delta Frequency Histogram")
     ax2.set_yscale('log')
     plt.savefig(fname[:-5]+"DeltaFrequencyHistogram.pdf")
     plt.show()
+
+    return data.freq.values[ind_min], mintab
