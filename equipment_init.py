@@ -1,3 +1,4 @@
+#%%
 import ivi
 import os
 import sys
@@ -84,3 +85,12 @@ def init_equip():
     }
 
     return equip
+
+
+if __name__=='__main__':
+    import visa
+    rm = visa.ResourceManager()
+    print(rm.list_resources())
+
+    init_equip()
+# %%
