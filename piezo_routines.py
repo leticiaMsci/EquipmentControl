@@ -88,7 +88,7 @@ def start_scan( sigen, tunics, scope,
 
 def end_scan(sigen, tunics, scope,
     ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3,
-    plot_bool = True):
+    plot_bool = True, sigen_onoff = True):
 
     transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
     reflec = np.array(scope.channels[ch_reflection].measurement.fetch_waveform())
@@ -109,7 +109,7 @@ def end_scan(sigen, tunics, scope,
     df_pol['mzi'] = mzi[1]
     df_pol['hcn'] = hcn[1]
 
-    sigen.output.off()
+    if sigen_onoff: sigen.output.off()
     #tunics.power_off()
     
     return df_pol
@@ -128,27 +128,30 @@ def wavelength_search(sigen, tunics, scope):
 def _flatten(a):
     return np.array([item for sublist in a for item in sublist])
 
-def pxa_stitching(sigen, tunics, scope, pxa, freqlst, nwait = 5, acqtime = 0.03):
-    pxa.rt.config()
-    pxa.continuous()
-    pxa.write(":TRAC:TYPE MAXH")
+def pxa_stitching(sigen, tunics, scope, pxa, freq_lst,
+                nwait = 5, acqtime = 0.03, sigen_onoff = True):
+    #pxa.rt.config()
+    #pxa.continuous()
+    #pxa.write(":TRAC:TYPE MAXH")
 
-    xlist=[]
-    ylist=[]
-    start_scan(sigen, tunics, scope)
-    for freq in freqlst:
-        pxa.rt.fcenter(freq)
-        time.sleep(nwait/sigen.frequency+acqtime)
-        x,y = pxa.trace()
-        xlist.append(x)
-        ylist.append(y)
-    df = end_scan(sigen, tunics, scope, plot_bool = False)
+    #xlist=[]
+    #ylist=[]
+    if sigen_onoff: start_scan(sigen, tunics, scope)
+    #for freq in freqlst:
+    #    pxa.rt.fcenter(freq)
+    #    time.sleep(nwait/sigen.frequency+acqtime)
+    #    x,y = pxa.trace()
+    #    xlist.append(x)
+    #    ylist.append(y)
+    x, y = pxa.rt.stitching(freq_lst, nwait/sigen.frequency+acqtime)
+    df = end_scan(sigen, tunics, scope, 
+            plot_bool = False, sigen_onoff = sigen_onoff)
 
-    xflat =_flatten(xlist)
-    yflat =  _flatten(ylist)
-    idx = np.argsort(xflat)
+    #xflat =_flatten(xlist)
+    #yflat =  _flatten(ylist)
+    #idx = np.argsort(xflat)
 
-    return xflat[idx], yflat[idx], df
+    return x, y, df
 
     
 if __name__=='__main__':
