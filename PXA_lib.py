@@ -1,7 +1,7 @@
 #%%
 import visa
 import numpy as np
-
+import time
 
 ip = '143.106.72.137'
 
@@ -62,6 +62,9 @@ class N9030A:
 
         self.write("INIT")
 
+    def _flatten(self, a):
+        return np.array([item for sublist in a for item in sublist])
+
     class SA:
         def __init__(self, outer):
             self.outer = outer
@@ -121,6 +124,26 @@ class N9030A:
                 print("Step")
 
             self._write("FREQ:CENT UP")
+
+        def stitching(self, freq_lst, acqtime, freq_unit='GHz'):
+            self.config()
+            self.outer.continuous()
+            self._write(":TRAC:TYPE MAXH")
+
+            xlist=[]
+            ylist=[]
+            for freq in freq_lst:
+                self.fcenter(freq)
+                time.sleep(acqtime)
+                x,y = self.outer.trace()
+                xlist.append(x)
+                ylist.append(y)
+
+            xflat =self.outer._flatten(xlist)
+            yflat =  self.outer._flatten(ylist)
+            idx = np.argsort(xflat)
+
+            return xflat[idx], yflat[idx]
 
 
         #def stitching(self, freq0, freqf, unit = 'GHz'):
