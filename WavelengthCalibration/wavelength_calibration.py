@@ -364,6 +364,39 @@ def calibration(data, λ0, peak_hcn, ind_min_hcn, ind_peaks_mzi):
     
     return data_i
 
+def freq_ruler(λ0, ind_peaks_mzi):
+    """Performs frequency calibration:
+            1-setting reference peak (λ0) in the 'peak_hcn'-th peak in measured hcn spectra.
+            2-using mzi peaks as frequency ruler.
+
+    Args:
+        data (dataframe): data to undergo frequency calibration
+        λ0 (float): wavelength reference peak.
+        peak_hcn (int): index of measured hcn peak that will be set as λ0.
+        ind_min_hcn (array): indexes in data of hcn peaks
+        ind_peaks_mzi (array): indexes (in data) of mzi peaks.
+
+    Returns:
+        dataframe: copy of data with calibrated frequency for each row.
+                    Notice that the data will be trimmed at the first and last mzi peaks.
+    """
+    
+    idx_central = int(len(ind_peaks_mzi)/2)
+    range_vector = (np.arange(len(ind_peaks_mzi)) - idx_central)/2
+    
+    x, D1_mzi, D2_mzi, D3_mzi = mzi_dispersion()
+    D1_mzi = lambdify(x, D1_mzi)(λ0) # FSR for MZI in THz
+    D2_mzi = lambdify(x, D2_mzi)(λ0) # D2/2pi for MZI in THz
+    D3_mzi = lambdify(x, D3_mzi)(λ0) # D3/2pi for MZI in THz
+    
+    freq_r = D1_mzi*range_vector + D2_mzi/2*range_vector**2 + D3_mzi/6*range_vector**3
+
+    freq_ifunc = interpolate.interp1d(ind_peaks_mzi, freq_r)
+
+    freq_ruler = freq_ifunc(np.arange(min(ind_peaks_mzi),max(ind_peaks_mzi)))
+
+    return freq_ruler
+
 def plot_calibration(data_i, ind_min_hcn, mintab_hcn, nist, save_bool, base_name = "./"):
     """Plots resulting calibration overlayered by expected peaks of wavelength reference.
 
