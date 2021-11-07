@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pandas as pd
 import numpy as np
 import pyLPD.MLtools as mlt
@@ -117,4 +118,68 @@ def freq_shift_correlation(x1, y1, x2, y2, n = None, plot_bool = False):
         plt.plot(x_sample-x_sample[imatch], y2_sample)
         plt.show()
     
-    return x_sample[imatch]
+    return x_sample[imatch], corr[imatch]
+
+def get_sizes(intervals):
+    diff = np.diff(intervals)
+    sizes = [diff[i][0]/diff[0][0] for i in range(len(diff))]
+    
+    return sizes
+
+def make_marks(ax, d1, d2, left = True, right = True):
+    kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+    kwargs.update(transform=ax.transAxes)
+    if right:
+        ax.plot((1 - d1, 1 + d1), (-d2, +d2), **kwargs)
+        ax.plot((1 - d1, 1 + d1), (1 - d2, 1 + d2), **kwargs)
+    if left:
+        ax.plot((-d1, +d1), (1-d2, +d2+1), **kwargs)
+        ax.plot(( - d1,  d1), (-d2, +d2), **kwargs)
+
+def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015, plot_bool = True):
+    mask = y>thshd
+    x = x[mask]
+    y=y[mask]
+
+    y_s = mlt.savitzky_golay(y, window_size = 17, order = 1)
+    posmax, maxtab, posmin, mintab= mlt.peakdet(y_s,5)
+
+    Ω = x[posmax]
+    
+    if plot_bool==False:
+        return Ω
+        
+    sizes = get_sizes(xintervals)
+    divider = make_axes_locatable(ax)
+     
+    for ii in range(len(xintervals)):
+        if ii>0:
+            ax = divider.new_horizontal(size="{}%".format(100*sizes[ii]), pad=0.2)
+            fig.add_axes(ax)
+
+        line, = ax.plot(x, y, alpha = 0.2)
+        ax.plot(x, y_s, color = line.get_color())
+        ax.set_xlim(xintervals[ii][0], xintervals[ii][1])
+        ax.set_ylim(yinterval[0], yinterval[1])
+        
+        if ii == 0 and ii+1 != len(xintervals):
+            right = True
+            left = False
+            ax.tick_params(left=True, labelleft=True)
+        elif ii+1 == len(xintervals) and ii!=0:
+            right = False
+            left = True
+            ax.tick_params(right=True, labelright=True, left=False, labelleft=False)
+        elif ii != 0 and ii+1 != len(xintervals):
+            right = False
+            left = False
+            ax.tick_params(left=False, labelleft=False)
+        else:
+            right = False
+            left = False
+    
+        ax.spines['left'].set_visible(not left)
+        ax.spines['right'].set_visible(not right)
+        make_marks(ax, d/sizes[ii], d, left=left, right=right) 
+        
+    return Ω
