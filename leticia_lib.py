@@ -1,6 +1,7 @@
 #%%
 import time
 import os
+import re
 import numpy as np
 from scipy import constants
 from scipy import interpolate
@@ -26,6 +27,19 @@ def folder(my_folder):
         os.makedirs(my_folder)
 
     return my_folder
+
+def get_values_from_str(s):
+    numeric_const_pattern = '[-+]? (?: (?: \d* \. \d+ ) | (?: \d+ \.? ) )(?: [Ee] [+-]? \d+ ) ?'
+    rx = re.compile(numeric_const_pattern, re.VERBOSE)
+    return rx.findall(s)
+
+def get_values_in_path(flist, idx):
+    lst = np.zeros(len(flist))
+    for ii, f in enumerate(flist):
+        info = get_values_from_str(f)
+        lst[ii] = float(info[idx])
+        
+    return lst
 
 def scope_avg(scope, channels):    
     scope.measurement.initiate()    
