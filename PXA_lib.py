@@ -19,7 +19,6 @@ class N9030A:
     def connect(self, ip = ip):
         visa_id = "TCPIP::"+ip+"::INSTR"
         self.pxa = self.rm.open_resource(visa_id)
-        #self.pxa.read_termination = '\n'
 
         print("Connecting PXA. IDN:", self.query("*IDN?"))
 
@@ -125,10 +124,11 @@ class N9030A:
 
             self._write("FREQ:CENT UP")
 
-        def stitching(self, freq_lst, acqtime, freq_unit='GHz'):
+        def stitching(self, freq_lst, acqtime, freq_unit='GHz', max_hold = True):
             self.config()
             self.outer.continuous()
-            self._write(":TRAC:TYPE MAXH")
+            
+            if max_hold: self._write(":TRAC:TYPE MAXH")
 
             xlist=[]
             ylist=[]
@@ -146,7 +146,7 @@ class N9030A:
             return xflat[idx], yflat[idx]
 
 
-        #def stitching(self, freq0, freqf, unit = 'GHz'):
+
 
 
 
