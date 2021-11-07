@@ -13,13 +13,15 @@ import time
 def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     sigen_freq = 5, sigen_amplitude=5, lbd_piezo=1550,
     ch_reflection = 0, ch_transmission = 1, ch_mzi = 2, ch_hcn=3,
-    val_att_in = None, val_att_r = None, val_att_out=None):
+    val_att_in = None, val_att_r = None, val_att_out=None, power = None):
 
     if val_att_in is not None: att_in.set_att(val_att_in)
     if val_att_out is not None: att_out.set_att(val_att_out)
     if val_att_r is not None:att_r.set_att(val_att_r)
+    
+    if power is None: power = tunics.power_default
 
-    tunics.power.on(pow_val=3, lbd=lbd_piezo)
+    tunics.power.on(pow_val=power, lbd=lbd_piezo)
 
     #sigen ramp
     sigen.waveforms.ramp(symmetry=90, frequency=sigen_freq, amplitude=sigen_amplitude, offset=0)
@@ -45,6 +47,7 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
 
     print("Polarization set successfully.")
     transmission = np.array(scope.channels[ch_transmission].measurement.fetch_waveform())
+    reflection = np.array(scope.channels[ch_reflection].measurement.fetch_waveform())
     mzi = np.array(scope.channels[ch_mzi].measurement.fetch_waveform())
     hcn = np.array(scope.channels[ch_hcn].measurement.fetch_waveform())
     
@@ -56,6 +59,7 @@ def set_polarization(att_in, att_out, att_r, sigen, tunics, scope,
     df_pol = pd.DataFrame()
     df_pol['time'] = transmission[0]
     df_pol['cav'] = transmission[1]
+    df_pol['reflec'] = reflection[1]
     df_pol['mzi'] = mzi[1]
     df_pol['hcn'] = hcn[1]
 
