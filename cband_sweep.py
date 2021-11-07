@@ -7,6 +7,7 @@ import pyLPD.MLtools as mlt
 def cband_scan(sigen, tunics, scope, config = True,
     lbd_ini = 1529, lbd_end = 1565, lbd_speed = 5,
     ch_reflec = 0, ch_cav = 1, ch_mzi=2, ch_hcn=3,
+    power = None,
     wait_tfs =0.99):
     """Controls equipment and performs a wavelength sweep over the C-band
     or whatever interval defined by lbd_ini and lbd_end.
@@ -40,8 +41,11 @@ def cband_scan(sigen, tunics, scope, config = True,
         scope._write(":TIMebase:ROLL:ENABLE ON")
         scope.acquisition.time_per_record = 1.6*time_frame
         scope._write(":STOP")
-        
-        tunics.power.on(pow_val=3, lbd = lbd_ini)
+
+        if power is None:
+            power = tunics.power_default
+
+        tunics.power.on(pow_val=power, lbd = lbd_ini)
         tunics.sweep.config(lbd_ini, lbd_end, lbd_speed, sweep_max_cycles=1)
     
     print("waiting for acquisition...")
@@ -51,7 +55,10 @@ def cband_scan(sigen, tunics, scope, config = True,
     scope._write(":RUN")
     tunics.sweep.wait(max_time = wait_tfs*time_frame)
     scope._write(":STOP")
+    print("stopped")
+    time.sleep((1.1-wait_tfs)*time_frame)
     #time.sleep(0.5)
+    print("timeout = fetching waveforms")
 
     waveform1 = np.array(scope.channels[ch_reflec].measurement.fetch_waveform())
     waveform2 = np.array(scope.channels[ch_cav].measurement.fetch_waveform())
