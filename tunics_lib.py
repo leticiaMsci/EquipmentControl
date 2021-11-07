@@ -22,7 +22,7 @@ class T100R:
     @author: Leticia Magalhaes
     """
     
-    def __init__(self, ip = ip, wavelength_mode = wavelength_mode, print_bool = True):
+    def __init__(self, ip = ip, wavelength_mode = wavelength_mode, print_bool = True, power_default = 3):
         
         #setting parameters:
         self.sweep_mode = sweep_mode
@@ -31,6 +31,7 @@ class T100R:
         self.wavelength_mode = wavelength_mode
         self.ip_addr = ip
         self.print_bool = print_bool
+        self.power_default = power_default
 
 
         #instantiating inner classes
