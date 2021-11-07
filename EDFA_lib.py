@@ -31,6 +31,12 @@ class KeopsysEDFA:
     def pump_off(self):
         self.write("K0")
 
+    def safe_pump_on(self, att_in, max_att = 60):
+        att_in.set_att(max_att)
+        time.sleep(1)
+        self.pump_on()
+        time.sleep(3)
+
 #%%
 if __name__=='__main__':
     import time
