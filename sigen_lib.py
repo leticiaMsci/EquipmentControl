@@ -38,7 +38,7 @@ class Sigen:
 
 
     def __del__(self):
-        self.output_off()
+        self.output.off()
         self.sigen.close()
     
     def opc(self):
