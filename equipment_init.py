@@ -12,13 +12,13 @@ import leticia_lib as llb
 
 #equipment id
 daq_port = 'Dev1/ao1'
-att_in_id = 'ASRL5::INSTR'
-att_r_id = 'ASRL13::INSTR'
+att_in_id = 'ASRL13::INSTR'
+att_r_id = 'ASRL8::INSTR'
 tunics_ip = 'yetula.ifi.unicamp.br'
 sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
 scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
 osa1_id = 'nano-osa-aq6370c.ifi.unicamp.br'
-osa2_id = '143.106.72.222'
+osa2_id = '143.106.72.151'
 VOA_calib_path = 'VOA\calib_U00306.json'
 pm_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
 edfa_gpib_port = 3
