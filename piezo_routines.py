@@ -176,3 +176,4 @@ if __name__=='__main__':
     tunics = tunics_lib.T100R(ip=tunics_ip)
     scope = ivi.agilent.agilentDSOX92504A(scope_id, prefer_pyvisa = True)
     sigen = sigen_lib.Sigen(sigen_visa = sigen_id)
+# %%
