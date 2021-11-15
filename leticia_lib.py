@@ -58,7 +58,7 @@ def balanced_att(val_total, val_in, lst_att_in, lst_att_out):
 sg_wind = 19
 sg_o = 2
 pkdet = 3
-def spectra_smooth(x, y, floor, λ_ref = None, fig_size=(5,3), 
+def spectra_smooth(x, y, floor, λ_ref = None, #fig_size=(5,3), 
                     sg_wind = sg_wind, sg_o = sg_o, pkdet = pkdet):
 
     y[y<floor] = floor
