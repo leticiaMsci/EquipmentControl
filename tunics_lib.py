@@ -15,6 +15,12 @@ sweep_mode = 'CONTinuous' #Options: STEPped (step-by-step scanning of the wavele
 sweep_repeat_mode = 'ONEWay' #Options: 'ONEWay' (One Way repeat mode), 'TWOWay' (Two Way repeat mode)
 sweep_max_cycles = 5 #Maximum number of cycles for wavelength sweep
 
+wavelength_correction = {
+    'slope' : 0.0005118863696938188,
+    'intercept' : -0.7326774176629481,
+    'calib_date': 'november 13, 2021',
+    'unit': 'NM'
+}
 
 class T100R:
     """ Instrument control of Tunics T100R - Tunable Laser
@@ -146,14 +152,21 @@ class T100R:
             return output
 
     class Wavelength:
-        def __init__(self, outer):
+        def __init__(self, outer, wavelength_correction=wavelength_correction):
             self.outer = outer
+            self.wavelength_correction = wavelength_correction
 
         def _query(self, msg):
             return self.outer.query(msg)
 
         def _send(self, msg):
             self.outer.send(msg)
+
+        def lbd_nominal(self, lbd):
+            a = self.wavelength_correction['slope']
+            b = self.wavelength_correction['intercept']
+
+            return lbd - (a*lbd+b)
         
         def set_lbd(self, lbd_nm, lbd_unit = 'NM'):
             output = self._query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
