@@ -15,7 +15,7 @@ class AQ63XX:
     gpib = True
     eth = False
     usb = False
-    gpibAddr = 13
+    gpibAddr = 6
     ip = "192.168.1.2"
     port = 10001
     user = ""
@@ -49,6 +49,9 @@ class AQ63XX:
     def __del__(self):
         self.CloseOSA()
         return 0
+
+    def write(self, msg):
+        self.osa.write(msg)
     
     #OSA functions
     
@@ -191,7 +194,7 @@ class AQ63XX:
         else:
             return 0
     
-    def SetSpanWavelength(self, wl, wl_unit = None):
+    def SetSpanWavelength(self, wl, wl_unit = 'nm'):
         if self.osaOK:
             if wl_unit == None:
                 wl = wl*1e-9
@@ -499,6 +502,13 @@ class AQ63XX:
         """
         self.osa.write(":SENSe:SENSe "+str(sensibility))
 
+    def TraceMaxHold(self, ravg =50):
+        self.osa.write(":TRACe:DEL TRA")
+        self.osa.write(":TRACe:ATTRibute MAX")
+        self.osa.write(":TRACe:ATTRibute:RAVG "+str(ravg))
+        
+
+
 # %%
 if __name__ == '__main__':
     osa = AQ63XX()
@@ -507,10 +517,9 @@ if __name__ == '__main__':
     osa.SetSpanWavelength(2)
     osa.SetCenterWavelength(1550)
     osa.SingleSweep()
-    x = osa.trace_x()
-    y = osa.trace_y()
+    x, y = osa.GetData()
 
-    plt.plot(x,y)
+    plt.plot(1e9*x,y)
 
     osa.osa.write('AUTO OFFSET OFF')
 # %%
