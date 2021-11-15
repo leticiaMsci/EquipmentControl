@@ -136,13 +136,14 @@ def make_marks(ax, d1, d2, left = True, right = True):
         ax.plot((-d1, +d1), (1-d2, +d2+1), **kwargs)
         ax.plot(( - d1,  d1), (-d2, +d2), **kwargs)
 
-def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015, plot_bool = True):
+def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015,
+                window_size_sg = 17, peakdet_delta=5, plot_bool = True):
     mask = y>thshd
     x = x[mask]
     y=y[mask]
 
-    y_s = mlt.savitzky_golay(y, window_size = 17, order = 1)
-    posmax, maxtab, posmin, mintab= mlt.peakdet(y_s,5)
+    y_s = mlt.savitzky_golay(y, window_size = window_size_sg, order = 1)
+    posmax, maxtab, posmin, mintab= mlt.peakdet(y_s,peakdet_delta)
 
     Ω = x[posmax]
     
