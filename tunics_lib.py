@@ -168,6 +168,12 @@ class T100R:
 
             return lbd - (a*lbd+b)
         
+        def lbd_real(self, lbd_nom):
+            a = self.wavelength_correction['slope']
+            b = self.wavelength_correction['intercept']
+
+            return lbd_nom + (a*lbd_nom+b)
+        
         def set_lbd(self, lbd_nm, lbd_unit = 'NM'):
             output = self._query('SOURce:WAVelength {:.3f} '.format(lbd_nm) + lbd_unit)
             self._query("*OPC?")
