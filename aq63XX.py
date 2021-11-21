@@ -68,7 +68,7 @@ class AQ63XX:
    #         try:
             if self.gpib:
                 osaname = "GPIB0::" + str(self.gpibAddr) + "::INSTR"
-                print(osaname)
+                #print(osaname)
                 self.osa = self.visarm.open_resource(osaname)
             elif self.eth:
                 osaname = "TCPIP0::" + self.ip + "::" + str(self.port) + "::SOCKET"
@@ -515,8 +515,11 @@ if __name__ == '__main__':
     osa.ConnectOSA()
     osa.InitOSA()
     osa.SetSpanWavelength(2)
-    osa.SetCenterWavelength(1550)
-    osa.SingleSweep()
+    osa.SetCenterWavelength(1557.5)
+    #osa.SingleSweep()
+    osa.TraceMaxHold()
+    time.sleep(10)
+
     x, y = osa.GetData()
 
     plt.plot(1e9*x,y)
