@@ -5,7 +5,7 @@ import sys
 equip_control_path = 'C:/Users/lpd/Documents/Leticia/DFS/EquipmentControl'
 sys.path.insert(1, equip_control_path)
 
-import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib, EDFA_lib
+import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib, EDFA_lib, ted200c
 import piezo_routines as piezo
 import VOA.VOA_lib as VOA_lib
 import leticia_lib as llb
@@ -22,6 +22,9 @@ osa2_id = '143.106.72.151'
 VOA_calib_path = 'VOA\calib_U00306.json'
 pm_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
 edfa_gpib_port = 3
+
+ted_read = "Dev1/ai0" # DAQ input channel
+ted_write = "Dev1/ao0" # DAQ output channel
 
 #scope channels
 ch_reflection = 0
@@ -95,6 +98,10 @@ def init_equip(**kwargs):#pxa_bool = True, tunics_bool = True, scope_bool = True
     if kwargs.get('edfa') is True:
         edfa = EDFA_lib.KeopsysEDFA(gpib_port=edfa_gpib_port)
         equip['edfa'] = edfa
+
+    if kwargs.get('ted') is True:
+        ted = ted200c.TED200C(dev_read=ted_read, dev_write=ted_write)
+        equip['ted'] = ted
 
 
     print("All Equipment Initialized Successfully")
