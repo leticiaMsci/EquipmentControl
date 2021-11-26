@@ -505,7 +505,7 @@ class AQ63XX:
     def TraceMaxHold(self, ravg =50):
         self.osa.write(":TRACe:DEL TRA")
         self.osa.write(":TRACe:ATTRibute MAX")
-        self.osa.write(":TRACe:ATTRibute:RAVG "+str(ravg))
+        #self.osa.write(":TRACe:ATTRibute:RAVG "+str(ravg))
         
 
 
