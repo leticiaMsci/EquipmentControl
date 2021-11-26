@@ -1,4 +1,4 @@
-
+#%%
 import nidaqmx
 import numpy as np
 
@@ -63,7 +63,19 @@ class TED200C:
 
     def write_temp(self, temp):
         volt = self.sensor.volt(temp)
+        print("TED200C - Desired temperature is: {:.2f} C, applied voltage: {:.2f} V".format(temp,  volt))
         _daq_write_voltage(volt)
+
+    def high_temp_diff(self, temp, steps = 10, wait_time=30):
+        temp0 = self.read_temp()
+        delta_temp = temp - temp0
+        temp_steps = delta_temp/steps
+        
+        for ii in range(steps):
+            self.write_temp(temp0+temp_steps*(ii+1))
+            time.sleep(wait_time)
+        self.write_temp(temp)
+
         
     
 
@@ -75,39 +87,47 @@ import pandas as pd
 
 if __name__=='__main__':
     ted = TED200C()
-    temp_f = 145.0
+    
     temp_0 = ted.read_temp()
-    save_path = './TED200C_characterization/Tempf{:.1}_Temp0{:.1}'.format(temp_f, temp_0)
 
-    
-    time0 = time.time()
-    ted.write_temp(temp_f)
 
-    temp_lst=[]
-    time_lst =[]
-    temp = 0
-    counter=0
-    while temp<0.99*temp_f and counter<5*60:
+    temp_f =70.0
+    for temp_f in range(21, 26):
+        print("temp_f", temp_f)
+        observation = 'PID_testing_P0_I0_disabled_Dhalf_'
+        save_name = 'Tempf{:.1f}_Temp0{:.1f}_LPD'.format(float(temp_f), float(temp_0))
+        save_path = './TED200C_characterization/'+observation+save_name
+
         
-        time_ = time.time()
-        temp = ted.read_temp()
+        time0 = time.time()
+        ted.write_temp(temp_f)
 
-        time_lst.append(time_-time0)
-        temp_lst.append(temp)
+        temp_lst=[]
+        time_lst =[]
+        temp = 0
+        counter=0
+        while counter<3600:#temp<0.99*temp_f and counter<5*60:
+            time_ = time.time()
+            temp = ted.read_temp()
 
-        time.sleep(5)
-        counter = counter+1
+            time_lst.append(time_-time0)
+            temp_lst.append(temp)
 
-        if counter%5==0:
-            plt.plot(time_lst, temp_lst)
-            plt.draw()
+            time.sleep(.1)
+            counter = counter+1
 
-    dict_ = {'time':time_lst, 'temp':temp_lst}
-    df = pd.DataFrame(dict_)
-    df.to_csv(save_path+'.csv')
+        ted.write_temp(temp_0)
+        plt.plot(time_lst, temp_lst)
+        plt.title("temp_f: {} [C] ".format(temp_f)+observation)
+        plt.xlabel("time [s]")
+        plt.ylabel(r"Temperature [$^o$C]")
+        plt.show()
 
-    
+        dict_ = {'time':time_lst, 'temp':temp_lst}
+        df = pd.DataFrame(dict_)
+        df.to_csv(save_path+'.csv')
+        time.sleep(120)
+# %%
 
-ted.write_temp(20)
 
-
+# %%
