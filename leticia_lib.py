@@ -8,8 +8,18 @@ from scipy import interpolate
 from matplotlib import pyplot as plt
 from matplotlib import ticker
 import pyLPD.MLtools as mlt
+import sys
 c = constants.c
 osa2_delta = 0.428
+
+def countdown(time_):
+
+    time_steps = time_/100
+    for ii in range(100):
+        time.sleep(time_steps)
+        print_ = 'Countdown: Time {:6.3f}s of {}s'.format(time_steps*(ii+1), time_)
+        sys.stdout.write('\r'+print_)
+        sys.stdout.flush()
 
 def flatten(a):
     return [item for sublist in a for item in sublist]
@@ -77,9 +87,7 @@ def spectra_smooth(x, y, floor, λ_ref = None, #fig_size=(5,3),
             sortΩ = np.argsort(np.abs(Ω))
             Ω=Ω[sortΩ[1:]]
             λ_peaks = x[ind_max][sortΩ[1:]]
-            λ_in = x[ind_max][sortΩ[0]]
-                
-        
+            λ_in = x[ind_max][sortΩ[0]]  
 
     output = {
         'x': x,
