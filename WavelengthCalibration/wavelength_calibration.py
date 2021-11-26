@@ -61,7 +61,6 @@ Raises:
 import os
 import itertools
 import sys
-import progressbar
 import numpy as np
 import pandas as pd
 import pyLPD.MLtools as mlt
@@ -559,21 +558,15 @@ def auto_calibrate(data_in, base_name, nist_path = None, forward_lbd_scan = True
     if forward_lbd_scan:
         data_raw = data_in[::-1].reset_index().copy()
 
-    try:
-        data_raw = cav_treat(data_raw)
-        data_raw = mzi_treat(data_raw)
+    
+    data_raw = cav_treat(data_raw)
+    data_raw = mzi_treat(data_raw)
 
-        ind_peaks_mzi_ = mzi_peaks(data_raw)
-        ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
-        data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, 
-                        save_bool = True, base_name = base_name)
-    except CalibrationUnsuccessful:
-        data_raw = data_raw[::-1].reset_index().copy()
-
-        ind_peaks_mzi_ = mzi_peaks(data_raw)
-        ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
-        data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, 
-                        save_bool = True, base_name = base_name)
+    ind_peaks_mzi_ = mzi_peaks(data_raw)
+    ind_min_hcn_, mintab_hcn_ = hcn_peaks(data_raw)
+    data_i = optimize_reference(data_raw, ind_min_hcn_, mintab_hcn_, ind_peaks_mzi_, nist, 
+                    save_bool = True, base_name = base_name)
+    
 
     data = pd.DataFrame()
 
