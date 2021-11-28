@@ -79,7 +79,7 @@ def cband_scan(sigen, tunics, scope, config = True,
 
     return df
 
-def plot_diff_freq(data, fname, pkdet_delta=0.25):
+def plot_diff_freq(data, fname, pkdet_delta=0.25, savefig = True):
     ind_max, maxtab, ind_min, mintab = mlt.peakdet(data.cav.values, delta=pkdet_delta)
     fΩ = data.freq.values[ind_min][:-1]
     Ω =  np.diff(data.freq.values[ind_min])*1e3
@@ -96,7 +96,8 @@ def plot_diff_freq(data, fname, pkdet_delta=0.25):
     ax2.set_ylabel("Occurence")
     ax2.set_title("Delta Frequency Histogram")
     ax2.set_yscale('log')
-    plt.savefig(fname[:-5]+"DeltaFrequencyHistogram.pdf")
+    if savefig:
+        plt.savefig(fname[:-5]+"DeltaFrequencyHistogram.pdf")
     plt.show()
 
     return data.freq.values[ind_min], mintab
