@@ -82,13 +82,15 @@ def spectra_smooth(x, y, floor, λ_ref = None, #fig_size=(5,3),
     if len(ind_max)>1:
         if λ_ref is None:
             Ω = c*np.diff(x[ind_max])/(x[ind_max[0]])**2
+            λ_peaks = x[ind_max[1:]]
+            λ_in = x[ind_max[0]] 
         else:
             Ω=c*(x[ind_max] - λ_ref)/(x[ind_max[0]])**2
             sortΩ = np.argsort(np.abs(Ω))
             Ω=Ω[sortΩ[1:]]
             λ_peaks = x[ind_max][sortΩ[1:]]
             λ_in = x[ind_max][sortΩ[0]]  
-
+    
     output = {
         'x': x,
         'y':y,
@@ -101,7 +103,7 @@ def spectra_smooth(x, y, floor, λ_ref = None, #fig_size=(5,3),
     
     return output
 
-def spectra_plot(dict_, ax=None, fig_size=(5,3)):
+def spectra_plot(dict_, ax=None, plot_axv = True):
     x = dict_['x']
     y = dict_['y']
     y_sg = dict_['y_sg']
@@ -113,13 +115,14 @@ def spectra_plot(dict_, ax=None, fig_size=(5,3)):
     if ax is None:
         ax = plt.gca()
 
-    ax.plot(x, y, '.-', alpha = 0.5, c='r')
-    ax.plot(x, y_sg, '-', linewidth = 2)       
-    ax.axvline(λ_in, ls='--', c='k')
+    line, = ax.plot(x, y, '.-', alpha = 0.5)
+    ax.plot(x, y_sg, '-', linewidth = 2, color = line.get_color())       
     
-    for Ω_peak, x_peak in zip(Ω, λ_peaks):
-        ax.axvline(x_peak, c='k')
-        ax.annotate('{:.3f} GHz'.format(Ω_peak), (x_peak+0.01, -40), rotation=70)
+    if plot_axv:
+        ax.axvline(λ_in, ls='--', c='k')
+        for Ω_peak, x_peak in zip(Ω, λ_peaks):
+            ax.axvline(x_peak, c='k')
+            ax.annotate('{:.3f} GHz'.format(Ω_peak), (x_peak+0.01, -40), rotation=70)
 
 
 def spectra_cycle(osa_cycle, lbd_cycle, δ_lst, 
