@@ -3,3 +3,5 @@
 *.ini
 *.ini
 *.pyc
+*.ini
+**/__pycache__
