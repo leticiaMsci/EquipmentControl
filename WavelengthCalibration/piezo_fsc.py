@@ -184,3 +184,12 @@ def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015
         make_marks(ax, d/sizes[ii], d, left=left, right=right) 
         
     return Ω
+
+def is_above_noise(y, gain):
+    #if gain ==1e4:
+    #    thshd = 0.15
+    #else:
+    #    thshd = 0.05
+    thshd = max(np.mean(y)+2*np.std(y), 0.11)
+
+    return any(y>thshd)
