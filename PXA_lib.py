@@ -6,6 +6,12 @@ import sys
 
 ip = '143.106.72.137'
 
+class _basic():
+    def _write(self, msg):
+        self.outer.write(msg)
+
+    def _query(self, msg):
+        return self.outer.query(msg)
 
 class N9030A:
     def __init__(self, ip_addr = ip):
@@ -14,8 +20,10 @@ class N9030A:
         self.operation = ""
 
         self.connect(ip=ip_addr)
+        self.preset()
         self.sa = self.SA(self)
         self.rt = self.RTSA(self)
+        self.gate = self.Gate(self)
 
         self.supported_modes = ["SA\n", "RTSA\n"]
 
@@ -30,6 +38,9 @@ class N9030A:
 
     def write(self, msg):
         self.pxa.write(msg)
+
+    def preset(self):
+        self.write(":SYSTem:PRESet")
 
     def trace(self):
         if self.query(":INSTrument?") in self.supported_modes:
@@ -67,15 +78,9 @@ class N9030A:
     def _flatten(self, a):
         return np.array([item for sublist in a for item in sublist])
 
-    class SA:
+    class SA (_basic):
         def __init__(self, outer):
             self.outer = outer
-        
-        def _write(self, msg):
-            self.outer.write(msg)
-
-        def _query(self, msg):
-            return self.outer.query(msg)
 
         def config(self):
             print("Configuring Spectrum Analyzer")
@@ -118,17 +123,10 @@ class N9030A:
             return self.outer.trace()
 
 
-
-    class RTSA:
+    class RTSA (_basic):
         def __init__(self, outer):
             self.outer = outer       
             self.step = None
-
-        def _write(self, msg):
-            self.outer.write(msg)
-
-        def _query(self, msg):
-            return self.outer.query(msg)
         
         def config(self):
             self._write(":INSTrument RTSA")
@@ -169,6 +167,39 @@ class N9030A:
 
             return xflat[idx], yflat[idx]
   
+    class Gate (_basic):
+        def __init__(self, outer):
+            self.outer = outer
+            
+
+        def setup(self, gate_time, gate_delay, freq_unit = 'GHz'):
+            "Setting up Gated Measurement"
+            self.outer.sa.config()
+            #self._write("FREQ:CENT {:.3f}".format(freq)+freq_unit)
+            self._write(":SWEep:EGATe ON")
+            self._write("SWEep:EGATe:VIEW ON")
+            self._write("SWEep:EGATe:TIME " + str(gate_time))
+            self._write("SWEep:EGATe:DELay " + str(gate_delay))
+
+        def fspan(self, start_freq = None, stop_freq = None, freq_unit = "GHz",
+                    bw = None, bw_unit = "KHZ"):
+            if self._query(":INSTrument?")!="SA\n":
+                self.config()
+
+            if start_freq is not None:
+                self._write(":FREQuency:STARt {:.6f} ".format(start_freq)+freq_unit)
+            
+            if stop_freq is not None:
+                self._write(":FREQuency:STOP {:.6f} ".format(stop_freq)+freq_unit)
+
+            if bw is not None:
+                self._write("SENSe:BANDwidth:RESolution {:.6f} ".format(bw)+bw_unit)
+        
+        def span_meas(self):
+            self._write("SWEep:EGATe:VIEW OFF")
+            return self.outer.trace()
+
+
 # define the countdown func.
 def _countdown(t):
     while t:
@@ -192,7 +223,10 @@ if __name__=='__main__':
 
     pxa = N9030A()
 
-    x, y = pxa.sa.wait_hold(3)
+    pxa.gate.setup(13e-3, 1e-3)
+    pxa.gate.fspan(9, 10)
+    time.sleep(3)
+    x,y = pxa.gate.span_meas()
     plt.plot(x,y)
     plt.show()
 
