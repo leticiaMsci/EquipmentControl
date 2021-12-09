@@ -9,17 +9,41 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker
 import pyLPD.MLtools as mlt
 import sys
+import json
 c = constants.c
 osa2_delta = 0.428
 
-def countdown(time_):
+def open_json(filename):
+    with open(filename, "r") as jsonfile:
+        return json.load(jsonfile)
+                
+def save_json(dict_, filename):
+    lbd_json = json.dumps(dict_, indent=4, sort_keys=False)
+    with open(filename, 'w') as jsonfile:
+        jsonfile.write(lbd_json)
+        print("Write successful: "+filename)
 
-    time_steps = time_/100
-    for ii in range(100):
+def countdown(time_):
+    time_steps = time_/10
+    for ii in range(10):
         time.sleep(time_steps)
         print_ = 'Countdown: Time {:6.3f}s of {}s'.format(time_steps*(ii+1), time_)
         sys.stdout.write('\r'+print_)
         sys.stdout.flush()
+
+def countdown_timer(t):
+    while t:
+        mins, secs = divmod(t, 60)
+        print_ = 'Countdown timer: {:02d}:{:02d}'.format(mins, secs)
+        sys.stdout.write('\r'+print_)
+        sys.stdout.flush()
+        
+        time.sleep(1)
+        t -= 1
+    print_ = 'Countdown timer: {:02d}:{:02d}'.format(0, 0)
+    sys.stdout.write('\r'+print_)
+      
+    print(' Ready!')
 
 def flatten(a):
     return [item for sublist in a for item in sublist]
@@ -103,7 +127,7 @@ def spectra_smooth(x, y, floor, λ_ref = None, #fig_size=(5,3),
     
     return output
 
-def spectra_plot(dict_, ax=None, plot_axv = True):
+def spectra_plot(dict_, ax=None, plot_axv = True, y_annotation = -40):
     x = dict_['x']
     y = dict_['y']
     y_sg = dict_['y_sg']
@@ -122,7 +146,7 @@ def spectra_plot(dict_, ax=None, plot_axv = True):
         ax.axvline(λ_in, ls='--', c='k')
         for Ω_peak, x_peak in zip(Ω, λ_peaks):
             ax.axvline(x_peak, c='k')
-            ax.annotate('{:.3f} GHz'.format(Ω_peak), (x_peak+0.01, -40), rotation=70)
+            ax.annotate('{:.3f} GHz'.format(Ω_peak), (x_peak+0.01, y_annotation), rotation=70)
 
 
 def spectra_cycle(osa_cycle, lbd_cycle, δ_lst, 
