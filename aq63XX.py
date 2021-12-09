@@ -124,8 +124,10 @@ class AQ63XX:
     def Reconnect(self):
         if self.osaOK:
             self.CloseOSA()
-            self.ConnectOSA()
-            self.InitOSA()
+            self.ConnectOSA(isgpib = self.gpib, address = self.gpibAddr,
+                            iseth = self.eth, ethip = self.ip, ethport = self.port,
+                            ipuser = self.user, ippass = self.passwd)
+            self.InitOSA(print_bool=self.print_bool, binarymode=self.binary)
 
     def HorizonScale(self, is_wavelength):
         if is_wavelength:
