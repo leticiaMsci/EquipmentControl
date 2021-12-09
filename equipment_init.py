@@ -18,7 +18,7 @@ tunics_ip = 'yetula.ifi.unicamp.br'
 sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
 scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
 osa1_id = 'nano-osa-aq6370c.ifi.unicamp.br'
-osa2_id = '143.106.72.151'
+osa2_id = '143.106.72.187'#'nano-osa2-aq6370c.ifi.unicamp.br'
 VOA_calib_path = 'VOA\calib_U00306.json'
 pm_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
 edfa_gpib_port = 3
@@ -86,7 +86,7 @@ def init_equip(**kwargs):#pxa_bool = True, tunics_bool = True, scope_bool = True
 
     if kwargs.get('osa2') is True:
         osa2 = aq63XX.AQ63XX()
-        osa2.ConnectOSA(isgpib = True, iseth = False, address=6, ethip = osa2_id, ipuser = '', ippass='')
+        osa2.ConnectOSA(isgpib = False, iseth = True, ethip = osa2_id,  ipuser = 'anonymous', ippass='123456')
         osa2.osa.write('AUTO OFFSET OFF')
         osa2.InitOSA(print_bool=False)
         equip['osa2'] = osa2
