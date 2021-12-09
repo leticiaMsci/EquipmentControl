@@ -2,6 +2,7 @@
 import visa
 import numpy as np
 import time
+import sys
 
 ip = '143.106.72.137'
 
@@ -16,6 +17,8 @@ class N9030A:
         self.sa = self.SA(self)
         self.rt = self.RTSA(self)
 
+        self.supported_modes = ["SA\n", "RTSA\n"]
+
     def connect(self, ip = ip):
         visa_id = "TCPIP::"+ip+"::INSTR"
         self.pxa = self.rm.open_resource(visa_id)
@@ -29,7 +32,7 @@ class N9030A:
         self.pxa.write(msg)
 
     def trace(self):
-        if self.mode == "SA" or self.mode == "RTSA":
+        if self.query(":INSTrument?") in self.supported_modes:
             self.write(':MMEM:STOR:TRAC:DATA TRACE1, "D:\\new.csv"')
             
             data = self.query(':MMEM:DATA?  "D:\\new.csv"')
@@ -67,24 +70,22 @@ class N9030A:
     class SA:
         def __init__(self, outer):
             self.outer = outer
-            if self.outer.mode !="SA":
-                self.config()
-                self.outer.mode  = "SA"
         
         def _write(self, msg):
             self.outer.write(msg)
 
         def _query(self, msg):
-            self.outer.query(msg)
+            return self.outer.query(msg)
 
         def config(self):
+            print("Configuring Spectrum Analyzer")
             self._write(":INSTrument SA")
+            self.outer.mode  = "SA"
 
         def fspan(self, start_freq = None, stop_freq = None, freq_unit = "GHz",
                     bw = None, bw_unit = "KHZ"):
-            if self.outer.mode !="SA":
-                self._write(":INSTrument SA")
-                self.outer.mode  = "SA"
+            if self._query(":INSTrument?")!="SA\n":
+                self.config()
 
             if start_freq is not None:
                 self._write(":FREQuency:STARt {:.6f} ".format(start_freq)+freq_unit)
@@ -98,20 +99,40 @@ class N9030A:
         def max_hold(self, trace=1):
             self._write("TRAC"+str(trace)+":TYPE MAXH")
 
+        def wait_hold(self, wait_time, config=True, ask=False, start_freq = None, stop_freq = None, freq_unit = "GHz",
+                    bw = None, bw_unit = "KHZ", trace=1):
+            if config:
+                if self._query(":INSTrument?")!="SA\n":
+                    print(self._query(":INSTrument?"))
+                    self.config()
+
+                self.outer.continuous()
+                self.fspan(start_freq = start_freq, stop_freq = stop_freq, freq_unit = freq_unit,
+                        bw = bw, bw_unit = bw_unit)
+                self.max_hold(trace=trace)
+            if ask:
+                input_= input("PXA wait_hold: Proceed?")
+            else:
+                _countdown(wait_time)
+
+            return self.outer.trace()
+
+
+
     class RTSA:
         def __init__(self, outer):
-            self.outer = outer
-            if self.outer.mode !="RTSA":
-                self.config()
-                self.outer.mode  = "RTSA"
-
+            self.outer = outer       
             self.step = None
 
         def _write(self, msg):
             self.outer.write(msg)
+
+        def _query(self, msg):
+            return self.outer.query(msg)
         
         def config(self):
             self._write(":INSTrument RTSA")
+            self.outer.mode  = "RTSA"
 
         def fcenter(self, freq, freq_unit = 'GHz'):
             self._write("FREQ:CENT {:.3f}".format(freq)+freq_unit)
@@ -125,7 +146,10 @@ class N9030A:
             self._write("FREQ:CENT UP")
 
         def stitching(self, freq_lst, acqtime, freq_unit='GHz', max_hold = True):
-            self.config()
+            
+            if self._query(":INSTrument?")!="RTSA\n":
+                self.config()
+
             self.outer.continuous()
             
             if max_hold: self._write(":TRAC:TYPE MAXH")
@@ -144,15 +168,22 @@ class N9030A:
             idx = np.argsort(xflat)
 
             return xflat[idx], yflat[idx]
-
-
-
-
-
-
-
+  
+# define the countdown func.
+def _countdown(t):
+    while t:
+        mins, secs = divmod(t, 60)
+        print_ = 'Countdown timer: {:02d}:{:02d}'.format(mins, secs)
+        sys.stdout.write('\r'+print_)
+        sys.stdout.flush()
         
-    
+        time.sleep(1)
+        t -= 1
+    print_ = 'Countdown timer: {:02d}:{:02d}'.format(0, 0)
+    sys.stdout.write('\r'+print_)
+      
+    print(' Ready!')
+
 #%%
 if __name__=='__main__':
     import numpy as np
@@ -161,19 +192,10 @@ if __name__=='__main__':
 
     pxa = N9030A()
 
-    pxa.sa.fspan(bw=300)
-    pxa.continuous()
-    pxa.sa.fspan(start_freq=6, stop_freq=7)
-    #pxa.rt.fcenter(6)
-    #pxa.continuous()
-    for ii in range(3):
-        pxa.single()
-        x,y = pxa.trace()
-        plt.plot(x, y+5*ii)
-
-        pxa.rt.fstep(100)
-
+    x, y = pxa.sa.wait_hold(3)
+    plt.plot(x,y)
     plt.show()
+
 
 
     
