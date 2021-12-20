@@ -57,5 +57,5 @@ if __name__=='__main__':
     resource_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
     pm = PM200(resource_id)
 
-    print(pm.meas_pow(unit = 'dBm'))
+    print(pm.pow_dBm())
 #%%
