@@ -1,7 +1,6 @@
 #%%
-import  att_lib, tunics_lib, aq63XX, sigen_lib
-import VOA.VOA_lib as VOA_lib
-import ivi
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -159,6 +158,10 @@ def pxa_stitching(sigen, tunics, scope, pxa, freq_lst,
 
     
 if __name__=='__main__':
+    import  tunics_lib, sigen_lib
+    import attenuators as atts
+    import ivi
+
     daq_port = 'Dev1/ao1'
     att_in_id = 'ASRL5::INSTR'
     att_r_id = 'ASRL13::INSTR'
@@ -170,9 +173,9 @@ if __name__=='__main__':
     ch_transmission = 1
     ch_mzi = 2
     ch_hcn=3
-    att_out = VOA_lib.VOA(daq_port,'VOA\calib_U00306.json')
-    att_in = att_lib.Att(resource_str = att_in_id)
-    att_r = att_lib.Att(resource_str = att_r_id)
+    att_out = atts.MN9625A(gpib=21)
+    att_in = atts.DA100(resource_str = att_in_id)
+    att_r = atts.VOA(daq_port,'U00306')
     tunics = tunics_lib.T100R(ip=tunics_ip)
     scope = ivi.agilent.agilentDSOX92504A(scope_id, prefer_pyvisa = True)
     sigen = sigen_lib.Sigen(sigen_visa = sigen_id)
