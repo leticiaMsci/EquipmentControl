@@ -24,6 +24,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import json
+import os
 
 
 ###############################################################################################
@@ -62,7 +63,7 @@ class VOA:
     docstring
     """
 
-    def __init__(self, daq_port, calib_filename, att_value=None):
+    def __init__(self, daq_port, serial_number, att_value=None, calib_filename = None):
         """initializes VOA attenuator
 
         Args:
@@ -73,6 +74,10 @@ class VOA:
             FileNotFoundError: [description]
             Exception: [description]
         """
+        if calib_filename is None:
+            path = os.path.dirname(os.path.realpath(__file__))
+            calib_filename =  os.path.join(path, "calib_"+serial_number+".json")
+
         try:
             with open(calib_filename, "r") as jsonfile:
                 calib_info = json.load(jsonfile)
