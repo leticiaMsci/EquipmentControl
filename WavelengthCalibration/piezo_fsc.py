@@ -137,7 +137,7 @@ def make_marks(ax, d1, d2, left = True, right = True):
         ax.plot(( - d1,  d1), (-d2, +d2), **kwargs)
 
 def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015,
-                window_size_sg = 17, peakdet_delta=5, plot_bool = True):
+                window_size_sg = 17, peakdet_delta=5, plot_bool = True, plot_filt = True):
     mask = y>thshd
     x = x[mask]
     y=y[mask]
@@ -146,9 +146,10 @@ def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015
     posmax, maxtab, posmin, mintab= mlt.peakdet(y_s,peakdet_delta)
 
     Ω = x[posmax]
+    PΩ = y[posmax]
     
     if plot_bool==False:
-        return Ω
+        return Ω, PΩ
         
     sizes = get_sizes(xintervals)
     divider = make_axes_locatable(ax)
@@ -158,8 +159,12 @@ def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015
             ax = divider.new_horizontal(size="{}%".format(100*sizes[ii]), pad=0.2)
             fig.add_axes(ax)
 
-        line, = ax.plot(x, y, alpha = 0.2)
-        ax.plot(x, y_s, color = line.get_color())
+        if plot_filt:
+            line, = ax.plot(x, y, alpha=0.3)
+            ax.plot(x, y_s, color = line.get_color())
+        else:
+            ax.plot(x, y)
+
         ax.set_xlim(xintervals[ii][0], xintervals[ii][1])
         ax.set_ylim(yinterval[0], yinterval[1])
         
@@ -183,7 +188,8 @@ def pxa_peaks(x, y, thshd, fig, ax, xintervals, yinterval = [-70, -10], d = .015
         ax.spines['right'].set_visible(not right)
         make_marks(ax, d/sizes[ii], d, left=left, right=right) 
         
-    return Ω
+    return Ω, PΩ
+
 
 def is_above_noise(y, gain):
     #if gain ==1e4:
