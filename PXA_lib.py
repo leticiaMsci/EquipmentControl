@@ -199,6 +199,9 @@ class N9030A:
             self._write("SWEep:EGATe:VIEW OFF")
             return self.outer.trace()
 
+        def off(self):
+            self._write(":SWEep:EGATe OFF")
+
 
 # define the countdown func.
 def _countdown(t):
