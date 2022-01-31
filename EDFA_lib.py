@@ -44,9 +44,9 @@ if __name__=='__main__':
     edfa = KeopsysEDFA(gpib_port=3)
     edfa.pump_on(wait=False)
     print("testing time to turn on")
-    for ii in range(10):
-        time.sleep(.5)
-        print(ii)
+    t0 = time.time()
+    input("On?")
+    print("Time to turn on is {.1f}".format(time.time()-t0))
     edfa.pump_off()
 
 
