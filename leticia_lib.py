@@ -1,4 +1,5 @@
 #%%
+#%%
 import time
 import os
 import re
@@ -50,11 +51,11 @@ def flatten(a):
     
 def time_stamp(precision_minute = True, precision_second = True):
     if not precision_minute:
-        return time.strftime("%Y-%m-%d_%H")
+        return time.strftime("%Y%m%d-%H")
     elif not precision_second:
-        return time.strftime("%Y-%m-%d-%H-%M")
+        return time.strftime("%Y%m%d-%H%M")
     else:
-        return time.strftime("%Y-%m-%d-%H-%M-%S")
+        return time.strftime("%Y%m%d-%H%M%S")
 
 def folder(my_folder):
     if not os.path.exists(my_folder):
@@ -127,7 +128,7 @@ def spectra_smooth(x, y, floor, λ_ref = None, #fig_size=(5,3),
     
     return output
 
-def spectra_plot(dict_, ax=None, plot_axv = True, y_annotation = -40):
+def spectra_plot(dict_, ax=None, plot_axv = True, y_annotation = -40, color=None):
     x = dict_['x']
     y = dict_['y']
     y_sg = dict_['y_sg']
@@ -139,7 +140,11 @@ def spectra_plot(dict_, ax=None, plot_axv = True, y_annotation = -40):
     if ax is None:
         ax = plt.gca()
 
-    line, = ax.plot(x, y, '.-', alpha = 0.5)
+    if color is not None:
+        line, = ax.plot(x, y, '.-', alpha = 0.5, color=color)
+    else:
+        line, = ax.plot(x, y, '.-', alpha = 0.5)
+
     ax.plot(x, y_sg, '-', linewidth = 2, color = line.get_color())       
     
     if plot_axv:
