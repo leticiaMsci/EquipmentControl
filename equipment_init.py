@@ -5,21 +5,23 @@ import sys
 equip_control_path = 'C:/Users/lpd/Documents/Leticia/DFS/EquipmentControl'
 sys.path.insert(1, equip_control_path)
 
-import att_lib, tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib, EDFA_lib, ted200c
+import  tunics_lib, aq63XX, sigen_lib, PXA_lib, thorlabs_pm_lib, EDFA_lib, ted200c
+import attenuators as atts
 import piezo_routines as piezo
-import VOA.VOA_lib as VOA_lib
 import leticia_lib as llb
 
 #equipment id
-daq_port = 'Dev1/ao1'
+daq_port_r = 'Dev1/ao1'
+
 att_in_id = 'ASRL13::INSTR'
-att_r_id = 'ASRL8::INSTR'
+att_out_id = 21 #'ASRL9::INSTR'
 tunics_ip = 'yetula.ifi.unicamp.br'
 sigen_id = 'USB0::0x0957::0x2B07::MY52701124::INSTR'
 scope_id = 'TCPIP0::nano-osc-ag9254a::hislip0::INSTR'
 osa1_id = 'nano-osa-aq6370c.ifi.unicamp.br'
 osa2_id = '143.106.72.187'#'nano-osa2-aq6370c.ifi.unicamp.br'
-VOA_calib_path = 'VOA\calib_U00306.json'
+VOA_sn_r = 'U00306'
+
 pm_id = 'USB0::0x1313::0x80B0::p3000966::0::INSTR'
 edfa_gpib_port = 3
 
@@ -47,15 +49,17 @@ def init_equip(**kwargs):#pxa_bool = True, tunics_bool = True, scope_bool = True
     }
     #attenuators
     if kwargs.get('att_out') is True: 
-        att_out = VOA_lib.VOA(daq_port, os.path.join(equip_control_path, VOA_calib_path))
+        #att_out = VOA_lib.VOA(daq_port_t, os.path.join(equip_control_path, VOA_calib_path_t))
+        att_out = atts.MN9625A(gpib = att_out_id)
         equip['att_out'] = att_out
 
     if kwargs.get('att_in') is True:
-        att_in = att_lib.Att(resource_str = att_in_id)
+        att_in = atts.DA100(resource_str = att_in_id)
         equip['att_in'] = att_in
 
     if kwargs.get('att_r') is True:
-        att_r = att_lib.Att(resource_str = att_r_id)
+        #att_r = att_lib.Att(resource_str = att_r_id)
+        att_r = atts.VOA(daq_port_r, VOA_sn_r)
         equip['att_r'] = att_r
 
     #other equipment
@@ -114,8 +118,9 @@ if __name__=='__main__':
     rm = visa.ResourceManager()
     print(rm.list_resources())
 
-    equip = init_equip(att_in = True, att_r=True)
-    att_r = equip['att_r']
-    att_r.set_att(10)
+    equip = init_equip(att_out=True, att_in = True)
+    att_out = equip['att_out']
+    att_in = equip['att_in']
+    att_out.set_att(31)
     
 # %%
