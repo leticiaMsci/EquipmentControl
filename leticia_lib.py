@@ -76,6 +76,9 @@ def get_values_in_path(flist, idx):
         
     return lst
 
+def base_name(flst):
+    return [os.path.basename(f) for f in flst]
+
 def scope_avg(scope, channels):    
     scope.measurement.initiate()    
     time.sleep(scope.acquisition.time_per_record)
