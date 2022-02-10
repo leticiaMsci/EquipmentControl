@@ -42,6 +42,9 @@ class N9030A:
     def preset(self):
         self.write(":SYSTem:PRESet")
 
+    def peak_search(self):
+        self.write(":CALCulate:MARKer:MAXimum")
+
     def trace(self):
         if self.query(":INSTrument?") in self.supported_modes:
             self.write(':MMEM:STOR:TRAC:DATA TRACE1, "D:\\new.csv"')
@@ -59,6 +62,9 @@ class N9030A:
             return a[:, 0], a[:, 1]
         else:
             raise Exception("Measurement MODE is not supported. You should implement it.")
+    
+    def max_hold(self, trace=1):
+            self.write("TRAC"+str(trace)+":TYPE MAXH")
 
     def single(self):
         if self.operation != "single":
@@ -174,7 +180,8 @@ class N9030A:
 
         def setup(self, gate_time, gate_delay, freq_unit = 'GHz'):
             "Setting up Gated Measurement"
-            self.outer.sa.config()
+            if self._query(":INSTrument?")!="SA\n":
+                self.outer.sa.config()
             #self._write("FREQ:CENT {:.3f}".format(freq)+freq_unit)
             self._write(":SWEep:EGATe ON")
             self._write("SWEep:EGATe:VIEW ON")
@@ -201,6 +208,28 @@ class N9030A:
 
         def off(self):
             self._write(":SWEep:EGATe OFF")
+
+        #Gate
+        def search_delay(self, step=0.2):
+            while True:
+                input_ = input("Input gate delay in ms, or + for next step or - for previous. To stop type enter.")
+                delay = 1e3*float(pxa.query("SWEep:EGATe:DELay?"))
+                if input_ =='+':
+                    delay = delay+step
+                    self._write("SWEep:EGATe:DELay "+str(1e-3*(delay)))
+                    print("Step Forward")
+                elif input_ =='-':
+                    delay = delay-step
+                    self._write("SWEep:EGATe:DELay "+str(1e-3*(delay)))
+                    print("Step Backwards")
+                else:              
+                    try:
+                        delay = float(input_)
+                        self._write("SWEep:EGATe:DELay "+str(1e-3*(delay)))
+                        print("Delay", input_)
+                    except ValueError:
+                        break
+            return delay
 
 
 # define the countdown func.
