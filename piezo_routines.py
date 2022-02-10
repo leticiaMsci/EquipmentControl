@@ -5,6 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
+import os
+import sys
+equip_control_path = 'C:/Users/lpd/Documents/Leticia/DFS/EquipmentControl'
+sys.path.insert(1, equip_control_path)
+import leticia_lib as llb
 
 
 
@@ -155,6 +160,40 @@ def pxa_stitching(sigen, tunics, scope, pxa, freq_lst,
     #idx = np.argsort(xflat)
 
     return x, y, df
+
+def save_data(equip, save_path, sigen_freq, sigen_amp, sigen_sym):
+    df_pxa = pd.DataFrame()
+    df_osa1 = pd.DataFrame()
+    df_osa2 = pd.DataFrame()
+
+    df_pxa['x'], df_pxa['y']  = equip['pxa'].trace()
+    df_osa1['x'], df_osa1['y'] = equip['osa1'].GetData()
+    df_osa2['x'], df_osa2['y'] = equip['osa2'].GetData()
+    df = end_scan(equip['sigen'], equip['tunics'], equip['scope'], 
+                        plot_bool = False, sigen_onoff = False)
+
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(7,3))
+    ax1.plot(df_pxa['x'], df_pxa['y'])
+    ax2.plot(df.cav/np.max(df.cav.values))
+    ax2.plot(df.reflec)
+    ax2.plot(df.hcn/np.max(df.hcn.values))
+    
+    temp = equip['ted'].read_temp()
+    lbd_real = equip['tunics'].wavelength.lbd_real(1e9*float(equip['tunics'].wavelength.sense()))
+    power = equip['pm'].pow_dBm(delta_input=True)
+
+    fname = os.path.join(save_path, 
+                llb.time_stamp()+"Temp{:.2f}C_Lbd{:.3f}nm_Pow_in{:.1f}dBm_Sigen_freq{}amp{}sym{}".format(
+                                    temp, lbd_real, power, sigen_freq, sigen_amp, sigen_sym))
+    df_pxa.to_csv(fname+"_PXA.csv")
+    df_osa1.to_csv(fname+"_OSA1.csv")
+    df_osa2.to_csv(fname+"_OSA2.csv")
+    df.to_parquet(fname+"_ScopeData.parq")
+    plt.savefig(fname+".png")
+    plt.show()
+    
+    peak_f =df_pxa['x'][ np.argmax(df_pxa['y'])]
+    return fname, peak_f
 
     
 if __name__=='__main__':
