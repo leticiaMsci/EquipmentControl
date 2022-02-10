@@ -213,7 +213,7 @@ class N9030A:
         def search_delay(self, step=0.2):
             while True:
                 input_ = input("Input gate delay in ms, or + for next step or - for previous. To stop type enter.")
-                delay = 1e3*float(pxa.query("SWEep:EGATe:DELay?"))
+                delay = 1e3*float(self._query("SWEep:EGATe:DELay?"))
                 if input_ =='+':
                     delay = delay+step
                     self._write("SWEep:EGATe:DELay "+str(1e-3*(delay)))
