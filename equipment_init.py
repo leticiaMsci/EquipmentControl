@@ -119,8 +119,8 @@ if __name__=='__main__':
     print(rm.list_resources())
 
     equip = init_equip(att_out=True, att_in = True)
-    att_out = equip['att_out']
-    att_in = equip['att_in']
-    att_out.set_att(31)
+    #att_out = equip['att_out']
+    #att_in = equip['att_in']
+    #att_out.set_att(31)
     
 # %%
