@@ -178,7 +178,7 @@ class N9030A:
             self.outer = outer
             
 
-        def setup(self, gate_time, gate_delay, freq_unit = 'GHz'):
+        def setup(self, gate_time, gate_delay = None, freq_unit = 'GHz'):
             "Setting up Gated Measurement"
             if self._query(":INSTrument?")!="SA\n":
                 self.outer.sa.config()
@@ -186,7 +186,8 @@ class N9030A:
             self._write(":SWEep:EGATe ON")
             self._write("SWEep:EGATe:VIEW ON")
             self._write("SWEep:EGATe:TIME " + str(gate_time))
-            self._write("SWEep:EGATe:DELay " + str(gate_delay))
+            if gate_delay is not None:
+                self._write("SWEep:EGATe:DELay " + str(gate_delay))
 
         def fspan(self, start_freq = None, stop_freq = None, freq_unit = "GHz",
                     bw = None, bw_unit = "KHZ"):
@@ -215,12 +216,10 @@ class N9030A:
                 input_ = input("Input gate delay in ms, or + for next step or - for previous. To stop type enter.")
                 delay = 1e3*float(self._query("SWEep:EGATe:DELay?"))
                 if input_ =='+':
-                    delay = delay+step
-                    self._write("SWEep:EGATe:DELay "+str(1e-3*(delay)))
+                    self._write("SWEep:EGATe:DELay "+str(1e-3*(delay+step)))
                     print("Step Forward")
                 elif input_ =='-':
-                    delay = delay-step
-                    self._write("SWEep:EGATe:DELay "+str(1e-3*(delay)))
+                    self._write("SWEep:EGATe:DELay "+str(1e-3*(delay-step)))
                     print("Step Backwards")
                 else:              
                     try:
@@ -229,7 +228,7 @@ class N9030A:
                         print("Delay", input_)
                     except ValueError:
                         break
-            return delay
+            return 1e3*float(self._query("SWEep:EGATe:DELay?"))
 
 
 # define the countdown func.
@@ -257,10 +256,7 @@ if __name__=='__main__':
 
     pxa.gate.setup(13e-3, 1e-3)
     pxa.gate.fspan(9, 10)
-    time.sleep(3)
-    x,y = pxa.gate.span_meas()
-    plt.plot(x,y)
-    plt.show()
+    pxa.gate.search_delay()
 
 
 
