@@ -2,3 +2,5 @@
 *.pyc
 *.ini
 **/__pycache__
+WavelengthCalibration/.DS_Store
+.DS_Store
